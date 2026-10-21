@@ -1,0 +1,21 @@
+# PR 门禁：brand.json 校验 + web 自包含检查
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: 校验 brand.json 与 web
+        run: node scripts/build.mjs --check

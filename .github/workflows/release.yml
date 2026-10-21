@@ -1,0 +1,83 @@
+# 发布：tag 解析（留空自动 patch+1）→ 构建 → 建 tag + release
+#
+# 与 clever-vpn-cf-api 的发布口径保持一致：统一 v 前缀，成功后创建 tag 与 release。
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '发布 tag（如 v1.0.0）。留空则自动 bump 最新 release 的 patch+1'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: 解析 tag
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_TAG}" ]; then
+            TAG="v${INPUT_TAG#v}"
+            echo "使用指定 tag: $TAG"
+          else
+            LATEST=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' || true)
+            if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
+              TAG="v0.1.0"
+              echo "无历史 release，使用 $TAG"
+            else
+              BASE="${LATEST#v}"; MAJOR="${BASE%%.*}"; REST="${BASE#*.}"; MINOR="${REST%%.*}"; PATCH="${REST#*.}"
+              TAG="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+              echo "自动 bump: $LATEST -> $TAG"
+            fi
+          fi
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::warning::tag $TAG 已存在，将复用"
+          fi
+          echo "release_tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: 构建
+        env:
+          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+        run: node scripts/build.mjs
+
+      - name: 打包产物
+        run: |
+          cd dist && zip -qr "../next-vpn-web-${RELEASE_TAG}.zip" . && cd ..
+        env:
+          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+
+      - name: 创建 tag + release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.resolve.outputs.release_tag }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "$TAG" || true
+          git push origin "$TAG" || true
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --generate-notes \
+            "next-vpn-web-${TAG}.zip" \
+          || gh release upload "$TAG" "next-vpn-web-${TAG}.zip" --clobber

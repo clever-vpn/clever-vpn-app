@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Next VPN</title>
+<!-- 由 scripts/build.mjs 从 brand.json 生成；本地预览缺失时走下面的兜底默认值 -->
+<script src="./_brand.js" onerror="void 0"></script>
+<style>
+  /* ── 品牌变量：只允许改这 8 个（其余一律引用变量） ── */
+  :root{
+    --brand:#3b82f6;
+    --bg:#f6f7f9;
+    --surface:#ffffff;
+    --text:#111827;
+    --dim:#6b7280;
+    --radius:14px;
+    --gap:8px;
+    --font:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    --ok:#10b981; --warn:#f59e0b; --bad:#ef4444;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0b0f16; --surface:#151b25; --text:#e8eef8; --dim:#93a1b5; }
+  }
+  html[data-theme="dark"]{ --bg:#0b0f16; --surface:#151b25; --text:#e8eef8; --dim:#93a1b5; }
+  html[data-theme="light"]{ --bg:#f6f7f9; --surface:#ffffff; --text:#111827; --dim:#6b7280; }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased}
+
+  .app{min-height:100%;display:grid;grid-template-rows:auto 1fr auto}
+  .shell{display:grid;grid-template-columns:1fr;gap:calc(var(--gap)*2);padding:calc(var(--gap)*2);max-width:980px;margin:0 auto;width:100%}
+
+  .topbar{display:flex;align-items:center;gap:calc(var(--gap)*1.5);padding:calc(var(--gap)*1.5) calc(var(--gap)*2)}
+  .logo{width:28px;height:28px;border-radius:9px;background:var(--brand);flex:0 0 auto}
+  .brandname{font-weight:650;font-size:15px}
+  .spacer{flex:1}
+  .iconbtn{width:34px;height:34px;border-radius:10px;border:1px solid color-mix(in srgb,var(--text) 12%,transparent);background:var(--surface);color:var(--text);cursor:pointer;font-size:15px;display:grid;place-items:center}
+
+  .hero{background:var(--surface);border-radius:calc(var(--radius)*1.4);padding:calc(var(--gap)*4) calc(var(--gap)*3);text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.05)}
+  .dial{position:relative;width:min(56vw,190px);aspect-ratio:1;margin:0 auto}
+  .dial svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .dial .track{stroke:color-mix(in srgb,var(--text) 10%,transparent)}
+  .dial .prog{stroke:var(--brand);stroke-linecap:round;transition:stroke-dashoffset .5s,stroke .3s}
+
+  .pwr{position:absolute;inset:0;margin:auto;width:62%;height:62%;border-radius:50%;border:none;cursor:pointer;color:#fff;font-size:13px;font-weight:600;background:var(--brand);box-shadow:0 8px 24px color-mix(in srgb,var(--brand) 35%,transparent);display:grid;place-items:center;padding:0;transition:transform .15s,background .3s}
+  .pwr:active{transform:scale(.97)}
+  .pwr[data-s="connected"]{background:var(--ok);box-shadow:0 8px 24px color-mix(in srgb,var(--ok) 35%,transparent)}
+  .pwr[data-s="connecting"]{background:var(--warn)}
+  .pwr[data-s="error"]{background:var(--bad)}
+
+  .state{margin-top:calc(var(--gap)*2.5);font-size:16px;font-weight:600}
+  .sub{margin-top:calc(var(--gap)*.5);font-size:13px;color:var(--dim)}
+  .timer{font-variant-numeric:tabular-nums;letter-spacing:.06em}
+
+  .notice{display:none;margin-top:calc(var(--gap)*2);padding:calc(var(--gap)*1.4) calc(var(--gap)*1.8);border-radius:var(--radius);font-size:13px;line-height:1.5;text-align:left;background:color-mix(in srgb,var(--bad) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--bad) 30%,transparent)}
+  .notice[data-k="warn"]{background:color-mix(in srgb,var(--warn) 12%,var(--surface));border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
+
+  .card{background:var(--surface);border-radius:calc(var(--radius)*1.2);padding:calc(var(--gap)*1.6)}
+  .card h3{margin:0 0 calc(var(--gap)*1.2);font-size:13px;font-weight:600;color:var(--dim)}
+  .srv{display:flex;align-items:center;gap:calc(var(--gap)*1.5);width:100%;padding:calc(var(--gap)*1.3) calc(var(--gap)*1.2);border-radius:var(--radius);border:none;background:transparent;color:inherit;font:inherit;cursor:pointer;text-align:left}
+  .srv:hover{background:color-mix(in srgb,var(--brand) 8%,transparent)}
+  .srv[aria-selected="true"]{background:color-mix(in srgb,var(--brand) 14%,transparent)}
+  .flag{font-size:18px;width:24px;text-align:center}
+  .srv .nm{flex:1;font-size:14px}
+  .srv .nm small{display:block;color:var(--dim);font-size:11.5px;margin-top:2px}
+  .ping{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .ping[data-good="1"]{color:var(--ok)}
+
+  .tabs{display:flex;justify-content:space-around;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent);background:var(--surface);padding:calc(var(--gap)*1.2) 0 calc(var(--gap)*1.2 + env(safe-area-inset-bottom))}
+  .tabs button{border:none;background:none;color:var(--dim);font:inherit;font-size:11.5px;display:grid;gap:3px;justify-items:center;cursor:pointer}
+  .tabs button[aria-current="page"]{color:var(--brand)}
+
+  @media (min-width:600px){
+    .shell{grid-template-columns:200px 1fr;align-items:start}
+    .tabs{display:none}
+    .hero{padding:calc(var(--gap)*5) calc(var(--gap)*3)}
+  }
+
+  /* 桌面迷你模式：?mini=1 */
+  body.mini .shell{grid-template-columns:1fr;padding:12px;gap:0;max-width:360px}
+  body.mini .topbar,body.mini .tabs,body.mini .list,body.mini .notice{display:none}
+  body.mini .hero{padding:14px;border-radius:16px;display:flex;align-items:center;gap:12px;text-align:left}
+  body.mini .dial{width:64px;margin:0}
+  body.mini .state{margin:0;font-size:14px}
+  body.mini .sub{margin:2px 0 0}
+  body.mini .pwr{font-size:11px}
+
+  /* 仅开发预览：?dev=1 才出现 */
+  .devbar{display:none;position:fixed;left:12px;bottom:12px;gap:6px;z-index:9}
+  body.dev .devbar{display:flex;flex-wrap:wrap}
+  .devbar button{font:12px var(--font);padding:5px 9px;border-radius:8px;cursor:pointer;border:1px solid color-mix(in srgb,var(--text) 16%,transparent);background:var(--surface);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo"></div>
+    <div class="brandname" id="brandname">Next VPN</div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="themeBtn" title="明暗切换">◐</button>
+  </div>
+
+  <div class="shell">
+    <main style="display:grid;gap:calc(var(--gap)*2)">
+      <section class="hero">
+        <div class="dial">
+          <svg viewBox="0 0 120 120">
+            <circle class="track" cx="60" cy="60" r="52" fill="none" stroke-width="8"></circle>
+            <circle class="prog" id="prog" cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-dasharray="326.7" stroke-dashoffset="326.7"></circle>
+          </svg>
+          <button class="pwr" id="pwr" data-s="disconnected">连接</button>
+        </div>
+        <div class="state" id="state">已断开</div>
+        <div class="sub" id="sub"></div>
+        <div class="notice" id="notice"></div>
+      </section>
+
+      <section class="card list">
+        <h3>节点</h3>
+        <div id="servers"></div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="tabs">
+    <button aria-current="page">⏻<span>首页</span></button>
+    <button>🌐<span>节点</span></button>
+    <button>⚙<span>设置</span></button>
+  </nav>
+</div>
+
+<div class="devbar">
+  <button data-demo="ok">连接成功</button>
+  <button data-demo="expired">已过期</button>
+  <button data-demo="frozen">已冻结</button>
+  <button data-demo="limit">设备超限</button>
+  <button data-demo="mini">迷你模式</button>
+  <button data-demo="brand">换品牌色</button>
+</div>
+
+<script>
+/* ══ 品牌（构建时注入） ══ */
+const B = Object.assign({ name:'Next VPN', brand_color:'#3b82f6' }, window.BRAND || {});
+document.getElementById('brandname').textContent = B.name;
+document.title = B.name;
+document.documentElement.style.setProperty('--brand', B.brand_color);
+
+/* ══ 壳的契约：3 个方法 + 1 个事件（浏览器里用 mock） ══ */
+const createMock = ()=>({
+  _s:'disconnected', _t:null, _cb:null,
+  async connect(){ this._s='connecting'; emit();
+    await new Promise(r=>setTimeout(r,900));
+    this._s='connected'; this._t=Date.now(); emit(); tick(); },
+  async disconnect(){ this._s='disconnected'; this._t=null; emit(); },
+  async state(){ return { status:this._s, since:this._t, serverName:selected.name }; },
+  on(cb){ this._cb=cb; }
+});
+const BRIDGE = window.__BRIDGE__ || createMock();
+function emit(){ BRIDGE._cb && Promise.resolve(BRIDGE._cb()).catch(()=>{}); }
+
+/* ══ 以下全是租户可改的界面逻辑 ══ */
+const SERVERS=[
+  {id:'hk',flag:'🇭🇰',name:'香港 01',city:'HK · 专线',ping:38},
+  {id:'jp',flag:'🇯🇵',name:'日本 02',city:'Tokyo · BGP',ping:62},
+  {id:'sg',flag:'🇸🇬',name:'新加坡 01',city:'SG · IEPL',ping:74},
+  {id:'us',flag:'🇺🇸',name:'美国 03',city:'Los Angeles',ping:168},
+];
+let selected=SERVERS[0], mode='normal';
+const $=id=>document.getElementById(id);
+const pwr=$('pwr'), stateEl=$('state'), subEl=$('sub'), noticeEl=$('notice'), prog=$('prog');
+
+$('servers').innerHTML = SERVERS.map(s=>`
+  <button class="srv" data-id="${s.id}" aria-selected="${s.id===selected.id}">
+    <span class="flag">${s.flag}</span>
+    <span class="nm">${s.name}<small>${s.city}</small></span>
+    <span class="ping" data-good="${s.ping<80?1:0}">${s.ping} ms</span>
+  </button>`).join('');
+
+$('servers').onclick = e=>{
+  const b=e.target.closest('.srv'); if(!b) return;
+  selected=SERVERS.find(x=>x.id===b.dataset.id);
+  [...$('servers').children].forEach(c=>c.setAttribute('aria-selected', c===b));
+  if(BRIDGE._s==='connected') BRIDGE.disconnect().then(()=>BRIDGE.connect({serverId:selected.id}));
+  else render();
+};
+
+pwr.onclick = ()=>{
+  if(BRIDGE._s==='connected') return BRIDGE.disconnect();
+  clearNotice();
+  if(mode==='expired') return show('bad','账号已过期','请到服务商后台续费后回来重试。');
+  if(mode==='frozen')  return show('bad','当前不可用','请联系你的服务商客服。');
+  if(mode==='limit')   return show('warn','设备数已满','在设置里移除一台设备，或联系客服提升上限。');
+  BRIDGE.connect({serverId:selected.id});
+};
+
+function render(){
+  const s=BRIDGE._s; pwr.dataset.s=s;
+  pwr.textContent = s==='connected'?'断开':s==='connecting'?'连接中':'连接';
+  stateEl.textContent = ({disconnected:'已断开',connecting:'正在连接…',connected:'已连接',error:'连接失败'})[s]||s;
+  subEl.innerHTML = s==='connected'
+    ? `<span class="timer">${fmt(BRIDGE._t)}</span> · ${selected.flag} ${selected.name}`
+    : s==='connecting' ? `正在连接 ${selected.name}` : `${selected.flag} ${selected.name} · ${selected.ping} ms`;
+  prog.style.strokeDashoffset = s==='connected'?0:s==='connecting'?180:326.7;
+}
+function fmt(t){ if(!t) return '00:00:00'; const s=Math.floor((Date.now()-t)/1000);
+  return [s/3600|0,(s/60|0)%60,s%60].map(n=>String(n).padStart(2,'0')).join(':'); }
+function tick(){ if(BRIDGE._s==='connected'){ render(); setTimeout(tick,1000);} }
+function show(k,title,body){ noticeEl.style.display='block'; noticeEl.dataset.k=k;
+  noticeEl.innerHTML=`<b>${title}</b><br>${body}`; stateEl.textContent=title; subEl.textContent=''; pwr.dataset.s='error'; pwr.textContent='重试'; }
+function clearNotice(){ noticeEl.style.display='none'; }
+
+BRIDGE.on(async()=>{ if(BRIDGE._s==='connected') mode='normal'; clearNotice(); render(); });
+render();
+
+$('themeBtn').onclick=()=>{
+  const cur=document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+  document.documentElement.dataset.theme = cur==='dark'?'light':'dark';
+};
+
+/* 开发预览工具条（?dev=1） */
+if(new URLSearchParams(location.search).has('dev')) document.body.classList.add('dev');
+if(new URLSearchParams(location.search).has('mini')) document.body.classList.add('mini');
+document.querySelector('.devbar').onclick=e=>{
+  const k=e.target.dataset.demo; if(!k) return;
+  if(k==='mini') return document.body.classList.toggle('mini');
+  if(k==='brand'){ const c=['#3b82f6','#8b5cf6','#ef4444','#10b981','#f59e0b'];
+    const cur=getComputedStyle(document.documentElement).getPropertyValue('--brand').trim();
+    return document.documentElement.style.setProperty('--brand', c[(c.indexOf(cur)+1)%c.length]); }
+  BRIDGE.disconnect(); mode = k==='ok'?'normal':k; render();
+};
+</script>
+</body>
+</html>

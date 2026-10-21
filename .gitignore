@@ -1,0 +1,25 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+.env
+.env.*
+
+# 构建期由 brand.json 生成，不入库
+web/_brand.js
+
+# 闭源核心二进制（由 kit/fetch-kit.sh 下载）
+kit/*.aar
+kit/*.xcframework
+kit/*.dll
+kit/*.nupkg
+kit/.cache/
+
+# 平台构建产物
+shell-windows/bin/
+shell-windows/obj/
+shell-macos/build/
+shell-macos/DerivedData/
+shell-android/build/
+shell-android/.gradle/
+shell-android/local.properties

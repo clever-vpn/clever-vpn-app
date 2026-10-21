@@ -1,0 +1,12 @@
+# 目录所有权：租户/贡献者可自由改 web 与 brand.json；
+# 壳与核心获取脚本需维护者审核。
+*                       @clever-vpn
+web/                    @clever-vpn
+brand.json              @clever-vpn
+docs/                   @clever-vpn
+shell-windows/          @clever-vpn
+shell-macos/            @clever-vpn
+shell-android/          @clever-vpn
+kit/                    @clever-vpn
+scripts/                @clever-vpn
+.github/                @clever-vpn
