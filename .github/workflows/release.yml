@@ -62,7 +62,7 @@ jobs:
 
       - name: 打包产物
         run: |
-          cd dist && zip -qr "../next-vpn-web-${RELEASE_TAG}.zip" . && cd ..
+          cd dist && zip -qr "../clever-vpn-app-web-${RELEASE_TAG}.zip" . && cd ..
         env:
           RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
 
@@ -79,5 +79,5 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --generate-notes \
-            "next-vpn-web-${TAG}.zip" \
-          || gh release upload "$TAG" "next-vpn-web-${TAG}.zip" --clobber
+            "clever-vpn-app-web-${TAG}.zip" \
+          || gh release upload "$TAG" "clever-vpn-app-web-${TAG}.zip" --clobber
