@@ -1,4 +1,4 @@
-# Repository Copilot Instructions — next-vpn
+# Repository Copilot Instructions — clever-vpn-app
 
 ## Git Workflow Policy (Mandatory)
 
