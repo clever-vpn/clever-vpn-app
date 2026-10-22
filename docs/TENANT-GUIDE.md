@@ -2,6 +2,14 @@
 
 目标：**只改配置和页面，不碰原生代码。**
 
+> 🤖 **用 agent 自动实施**：本仓库内置 skill `.github/skills/white-label-app/SKILL.md`。
+> 在 fork 里直接对 Copilot 说「按 white-label-app skill 改品牌」，它会按步骤改
+> `brand.json` / `web/` 并跑 `node scripts/build.mjs --check` 验收。
+>
+> **保证边界**：我们只保证缺省配置（只改 `brand.json` 与本文允许的文件）下的构建与
+> 发布正确；改 `shell-*/`、`kit/`、`scripts/` 就要自己维护。
+> **发布只走 GitHub Actions**，不要在本地 build 后手工上传当正式发布。
+
 ## 一、三步上线
 
 ```bash
@@ -68,4 +76,6 @@ dist/
 └── manifest.json   品牌 / 版本 / kit 版本 / 构建时间
 ```
 
-平台安装包由 `shell-*/` 的构建产出（Windows `msix`/`exe`、macOS `dmg`、Android `apk`）。
+平台安装包由 `shell-*/` 的构建产出（Windows `msix`/`exe`、macOS `dmg`、Android `apk`），
+**由 GitHub Actions 生成并在 Release 里提供下载**；壳尚未实现前，CI 只产上面这份
+web 包。
