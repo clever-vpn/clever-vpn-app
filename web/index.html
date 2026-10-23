@@ -147,16 +147,30 @@ document.getElementById('brandname').textContent = B.name;
 document.title = B.name;
 document.documentElement.style.setProperty('--brand', B.brand_color);
 
+/* ══ 错误码 → 文案（bridge@1）══
+   UI 不判断业务，只按壳给的 code 选文案。
+   FROZEN 必须中性：不要写成对用户的定性判断。*/
+const ERROR_COPY = {
+  EXPIRED:      { k:'bad',  title:'账号已过期', body:'请到服务商后台续费后回来重试。' },
+  FROZEN:       { k:'warn', title:'当前不可用', body:'请联系你的服务商客服。' },
+  DEVICE_LIMIT: { k:'warn', title:'设备数已满', body:'在设置里移除一台设备，或联系客服提升上限。' },
+  NETWORK:      { k:'warn', title:'网络不可达', body:'请检查你的网络，或换一个节点再试。' },
+  INTERNAL:     { k:'bad',  title:'连接失败', body:'请重试；持续失败请联系客服。' },
+};
+
 /* ══ 壳的契约：3 个方法 + 1 个事件（浏览器里用 mock） ══ */
-const createMock = ()=>({
-  _s:'disconnected', _t:null, _cb:null,
-  async connect(){ this._s='connecting'; emit();
-    await new Promise(r=>setTimeout(r,900));
-    this._s='connected'; this._t=Date.now(); emit(); tick(); },
-  async disconnect(){ this._s='disconnected'; this._t=null; emit(); },
-  async state(){ return { status:this._s, since:this._t, serverName:selected.name }; },
-  on(cb){ this._cb=cb; }
-});
+const createMock = ()=>{
+  const m = {
+    _s:'disconnected', _t:null, _err:null, _cb:null,
+    async connect(){ m._s='connecting'; m._err=null; emit();
+      await new Promise(r=>setTimeout(r,900));
+      m._s='connected'; m._t=Date.now(); emit(); tick(); },
+    async disconnect(){ m._s='disconnected'; m._t=null; emit(); },
+    async state(){ return { status:m._s, since:m._t, serverName:selected.name, error:m._err }; },
+    on(cb){ m._cb=cb; },
+  };
+  return m;
+};
 const BRIDGE = window.__BRIDGE__ || createMock();
 function emit(){ BRIDGE._cb && Promise.resolve(BRIDGE._cb()).catch(()=>{}); }
 
@@ -167,7 +181,7 @@ const SERVERS=[
   {id:'sg',flag:'🇸🇬',name:'新加坡 01',city:'SG · IEPL',ping:74},
   {id:'us',flag:'🇺🇸',name:'美国 03',city:'Los Angeles',ping:168},
 ];
-let selected=SERVERS[0], mode='normal';
+let selected=SERVERS[0];
 const $=id=>document.getElementById(id);
 const pwr=$('pwr'), stateEl=$('state'), subEl=$('sub'), noticeEl=$('notice'), prog=$('prog');
 
@@ -189,9 +203,6 @@ $('servers').onclick = e=>{
 pwr.onclick = ()=>{
   if(BRIDGE._s==='connected') return BRIDGE.disconnect();
   clearNotice();
-  if(mode==='expired') return show('bad','账号已过期','请到服务商后台续费后回来重试。');
-  if(mode==='frozen')  return show('bad','当前不可用','请联系你的服务商客服。');
-  if(mode==='limit')   return show('warn','设备数已满','在设置里移除一台设备，或联系客服提升上限。');
   BRIDGE.connect({serverId:selected.id});
 };
 
@@ -211,7 +222,24 @@ function show(k,title,body){ noticeEl.style.display='block'; noticeEl.dataset.k=
   noticeEl.innerHTML=`<b>${title}</b><br>${body}`; stateEl.textContent=title; subEl.textContent=''; pwr.dataset.s='error'; pwr.textContent='重试'; }
 function clearNotice(){ noticeEl.style.display='none'; }
 
-BRIDGE.on(async()=>{ if(BRIDGE._s==='connected') mode='normal'; clearNotice(); render(); });
+/* 壳的"通知"不是真相：收到事件后回问 state() */
+BRIDGE.on(()=>{ BRIDGE.state().then(applySnapshot, ()=>{}); });
+
+function applySnapshot(s){
+  if(!s) return;
+  BRIDGE._s = s.status || BRIDGE._s;
+  BRIDGE._t = s.since ?? null;
+  BRIDGE._err = s.error || null;
+  if(BRIDGE._err){
+    const c = ERROR_COPY[BRIDGE._err.code] || ERROR_COPY.INTERNAL;
+    show(c.k, c.title, c.body);
+  } else {
+    clearNotice(); render();
+  }
+}
+
+/* 每次加载/刷新必须问一次 state()：事件不会重放 */
+BRIDGE.state().then(applySnapshot, ()=>{});
 render();
 
 $('themeBtn').onclick=()=>{
@@ -228,7 +256,12 @@ document.querySelector('.devbar').onclick=e=>{
   if(k==='brand'){ const c=['#3b82f6','#8b5cf6','#ef4444','#10b981','#f59e0b'];
     const cur=getComputedStyle(document.documentElement).getPropertyValue('--brand').trim();
     return document.documentElement.style.setProperty('--brand', c[(c.indexOf(cur)+1)%c.length]); }
-  BRIDGE.disconnect(); mode = k==='ok'?'normal':k; render();
+  const code = { ok:null, expired:'EXPIRED', frozen:'FROZEN', limit:'DEVICE_LIMIT' }[k];
+  BRIDGE.disconnect().then(()=>{
+    BRIDGE._err = code ? { code, message:'' } : null;
+    if(code){ const c = ERROR_COPY[code]; show(c.k, c.title, c.body); }
+    else { clearNotice(); render(); }
+  });
 };
 </script>
 </body>

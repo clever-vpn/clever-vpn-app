@@ -1,4 +1,4 @@
-# PR 门禁：brand.json 校验 + web 自包含检查
+# PR 门禁：brand.json 校验 + web 自包含检查 + web 契约（studio-app.md §2）
 name: validate
 
 on:
@@ -8,6 +8,11 @@ on:
 
 permissions:
   contents: read
+
+# 同一分支的新提交取消旧跑，省租户的 Actions 分钟数
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
@@ -19,3 +24,22 @@ jobs:
           node-version-file: .nvmrc
       - name: 校验 brand.json 与 web
         run: node scripts/build.mjs --check
+
+  web-contract:
+    name: web-contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: 校验 web/ 契约
+        run: node scripts/check-web.mjs --report web-contract-report.json
+      - name: 上传报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-contract-report
+          path: web-contract-report.json
+          if-no-files-found: warn
+          retention-days: 14
