@@ -47,6 +47,28 @@ node scripts/build.mjs          # 产物在 dist/
 | 请求你自己的后端（登录、套餐、支付）| 把密钥、支付私钥写进前端代码 |
 | 8 个 CSS 变量（配色、圆角、间距）| 硬编码颜色（会导致换品牌失效）|
 
+### 3.1 提交前先自己跑一遍（CI 会拦）
+
+```bash
+node scripts/check-web.mjs        # 逐条打印，退出码非 0 = 有违规
+```
+
+CI 的 `validate` 与 `web-contract` 两个 job 必须全绿才能合并。规则来自
+`clever-vpn-docs` 仓库的 `docs/contracts/studio-app.md`，要点：
+
+| 检查 ID | 规则 |
+|---|---|
+| `bridge.methods` | 只允许 `connect` / `disconnect` / `state` / `on`；不得直接碰各端原生注入点 |
+| `bridge.state-on-load` | 页面加载后必须调一次 `state()`（事件不会重放） |
+| `bridge.error-copy` | `EXPIRED` / `FROZEN` / `DEVICE_LIMIT` / `NETWORK` / `INTERNAL` 都要有文案 |
+| `bridge.frozen-neutral` | `FROZEN` 必须是中性文案（不得对用户做定性） |
+| `brand.from-window-brand` | 品牌值只允许出现在 `index.html` 的兜底默认值里 |
+| `assets.no-external` | 不得引用任何外部 URL 资源（CDN / 字体 / 图片 / import） |
+| `archive.limits` | 单文件 ≤ 1 MB、总量 ≤ 8 MB、≤ 200 个文件、目录深度 ≤ 3 |
+
+> 静态检查只拦「一眼能看出的错」。能不能真的跑起来（加载、点击流、console 是否干净）
+> 由后续的无头浏览器 job 判定；两边都绿才算合格。
+
 ## 四、本地开发（不需要真壳）
 
 ```bash

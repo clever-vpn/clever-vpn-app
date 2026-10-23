@@ -61,6 +61,24 @@ node scripts/build.mjs --check
 
 `web/index.html` **不允许引用外部 CDN 脚本/样式**（离线必须可用，`validate` 会拦）。
 
+### 改完 `web/` 必须过契约校验
+
+```bash
+node scripts/check-web.mjs        # 退出码非 0 = 有违规，逐条给出 file:line
+```
+
+CI 里是 `web-contract` job。规则来自 `clever-vpn-docs` 的 `docs/contracts/studio-app.md`：
+
+| 检查 ID | 规则 |
+|---|---|
+| `bridge.methods` | 只用 `connect` / `disconnect` / `state` / `on`；不得直接碰 `chrome.webview` / `webkit.messageHandlers` / `Bridge.postMessage` |
+| `bridge.state-on-load` | 加载后必须调一次 `state()`（事件不会重放） |
+| `bridge.error-copy` | `EXPIRED` / `FROZEN` / `DEVICE_LIMIT` / `NETWORK` / `INTERNAL` 都要有文案 |
+| `bridge.frozen-neutral` | `FROZEN` 必须中性文案（不得对用户定性） |
+| `brand.from-window-brand` | 品牌值只允许出现在 `index.html` 的兜底默认值里 |
+| `assets.no-external` | 不得引用任何外部 URL 资源 |
+| `archive.limits` | 单文件 ≤ 1 MB、总量 ≤ 8 MB、≤ 200 文件、目录 ≤ 3 层 |
+
 本地预览（不需要真壳）：
 
 ```bash
@@ -75,7 +93,7 @@ cd web && python3 -m http.server 8000
 
 **不要**在本地 build 后手工上传作为正式发布。
 
-1. 改完走分支 + PR（`validate` 会跑 `--check`）；
+1. 改完走分支 + PR（`validate` + `web-contract` 两个 job 会拦）；
 2. 合并后 → Actions → **release** → **Run workflow**：
    - `tag` 留空 = 自动在上个 release 上 patch+1（首次 `v0.1.0`）；
    - 也可指定 `1.2.3` 或 `v1.2.3`（统一按 `v` 前缀发布）。
@@ -92,11 +110,15 @@ cd web && python3 -m http.server 8000
 | `bundle_id.x 必须是反向域名格式` | 用了 `NextVPN`、`com.acme`（只有两段）等 |
 | `⚠ bundle_id 还是示例值` | 仍是 `com.example.*`，上架前必须改 |
 | `web/index.html 引用了外部资源` | 删掉 CDN `<script src="https://…">` / `<link href="https://…">` |
+| `bridge.xxx() 不在 bridge@1 白名单内` | 只允许 `connect` / `disconnect` / `state` / `on`；自己封装的方法请改名 |
+| `页面加载后必须调用一次 state()` | 在 `<script>` 末尾加 `BRIDGE.state().then(render)` |
+| `缺少错误码文案` / `FROZEN 文案必须中性` | 建一张 `ERROR_COPY` 表，5 个 code 都要有 |
 | `validate` 通过但页面没变色 | 用了硬编码颜色，没走 CSS 变量；或没重新 `build.mjs`（`_brand.js` 是生成物） |
 
 ## 6. 交付核对
 
 - [ ] `node scripts/build.mjs --check` 通过
+- [ ] `node scripts/check-web.mjs` 通过（CI 的 `web-contract` job）
 - [ ] `bundle_id` 四端都是自己的反域名、非 `com.example.*`
 - [ ] `links` 指向真实条款/隐私/客服页
 - [ ] Actions `release` 成功，Release 里有 zip 资产
