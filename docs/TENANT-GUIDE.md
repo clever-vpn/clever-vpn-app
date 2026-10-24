@@ -10,6 +10,37 @@
 > 发布正确；改 `shell-*/`、`kit/`、`scripts/` 就要自己维护。
 > **发布只走 GitHub Actions**，不要在本地 build 后手工上传当正式发布。
 
+## 零、fork 之后第一件事：把门禁打开
+
+> **GitHub 的 fork 不继承任何分支保护设置。** 你 fork 出来的仓库，`main` 默认是完全
+> 无保护的：CI 红了照样能合并，甚至能直接 `git push origin main`。
+
+三步打开（约 1 分钟）：
+
+1. 仓库页 → **Settings** → **Rules** → **Rulesets** → **New branch ruleset**
+2. Name 填 `protect-main`，Enforcement 选 **Active**，Target 选 **Include default branch**
+3. 勾下面两项后 **Create**：
+   - **Require status checks to pass** → 搜索并添加 `validate` 与 `web-contract`
+   - **Block force pushes**
+
+说明：
+
+- 两个检查名要**先跑过一次**才会出现在搜索框里；搜不到就先提一个 PR 让它跑一遍。
+- 建议同时勾 **Require a pull request before merging**，并把 `Required approvals` 填 `0`：
+  它能拦住"直接 push 到 main"，又因为不要求人工批准，不会卡住你自己。
+- 以后若改了 job 名称，记得同步更新这里的 required 列表，否则 PR 会一直卡在
+  `Expected — Waiting for status to be reported`，永远合不了。
+
+### 0.1 public 还是 private？这次有实质差别
+
+| fork 可见性 | 分支保护 | Actions 分钟数 | 建议 |
+|---|---|---|---|
+| **public** | ✅ 免费可用 | **不限** | 推荐，零成本就能有门禁 |
+| private + Pro/Team | ✅ 可用 | 计入自己的配额 | 想保守时选 |
+| private + 免费账户 | ❌ **不可用** | 2000 分钟/月 | 慎选：门禁降级为"提示" |
+
+> 换句话说：**private 免费账户下，下面的 CI 只能给你看红色，拦不住你合并。**
+
 ## 一、三步上线
 
 ```bash

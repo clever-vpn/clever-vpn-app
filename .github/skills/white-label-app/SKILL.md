@@ -16,6 +16,22 @@ description: **WORKFLOW SKILL** — 把 clever-vpn-app 变成自有品牌应用�
 **fork 成 public 还是 private 由你决定**（只影响 Actions 分钟数计费：public 免费，
 private 消耗你的配额；macOS runner 计费倍率 ×10）。
 
+> ⚠️ **但有一个例外**：fork 成 private 且用**免费账户** ⇒ **分支保护不可用**（需 Pro/Team）。
+> 那样下面的门禁只能显示红叉，拦不住合并。想“零成本 + 门禁生效”，就保持 public。
+
+### 0.1 fork 之后第一件事：把门禁打开
+
+**fork 不继承分支保护设置。** 不做这一步，`validate` / `web-contract` 红了也能合并。
+
+1. `Settings → Rules → Rulesets → New branch ruleset`
+2. Name 填 `protect-main`，Enforcement 选 **Active**，Target 选 **Include default branch**
+3. 勾 **Require status checks to pass** → 添加 `validate` 与 `web-contract`
+4. 勾 **Block force pushes** → Create
+
+> 检查名要**先跑过一次**才会出现在搜索框里；搜不到就先提一个 PR。
+> 以后改了 job 名称，要同步更新 required 列表，否则 PR 永远卡在
+> `Expected — Waiting for status to be reported`。
+
 ## 1. 先向服务方索取 3 个值
 
 | 值 | 用途 | 备注 |
