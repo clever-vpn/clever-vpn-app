@@ -5,6 +5,12 @@ dist/
 .env
 .env.*
 
+# Playwright（仅 CI 与本地冒烟用）
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
 # 构建期由 brand.json 生成，不入库
 web/_brand.js
 
