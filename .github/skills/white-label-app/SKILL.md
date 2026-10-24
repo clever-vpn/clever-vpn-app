@@ -25,7 +25,7 @@ private 消耗你的配额；macOS runner 计费倍率 ×10）。
 
 1. `Settings → Rules → Rulesets → New branch ruleset`
 2. Name 填 `protect-main`，Enforcement 选 **Active**，Target 选 **Include default branch**
-3. 勾 **Require status checks to pass** → 添加 `validate` 与 `web-contract`
+3. 勾 **Require status checks to pass** → 添加 `validate`、`web-contract` 与 `web-smoke`
 4. 勾 **Block force pushes** → Create
 
 > 检查名要**先跑过一次**才会出现在搜索框里；搜不到就先提一个 PR。
@@ -94,6 +94,10 @@ CI 里是 `web-contract` job。规则来自 `clever-vpn-docs` 的 `docs/contract
 | `brand.from-window-brand` | 品牌值只允许出现在 `index.html` 的兜底默认值里 |
 | `assets.no-external` | 不得引用任何外部 URL 资源 |
 | `archive.limits` | 单文件 ≤ 1 MB、总量 ≤ 8 MB、≤ 200 文件、目录 ≤ 3 层 |
+
+还有一个**行为冒烟** job `web-smoke`：假壳 + 真实 Chromium，跑连接/断开、5 个错误码文案、
+三档视口截图、console 无 error。本地跑：`npm ci && npx playwright install chromium && npx playwright test`
+（只有测试用 Playwright，`scripts/*.mjs` 仍零依赖）。
 
 本地预览（不需要真壳）：
 

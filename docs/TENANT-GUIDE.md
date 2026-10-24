@@ -20,7 +20,7 @@
 1. 仓库页 → **Settings** → **Rules** → **Rulesets** → **New branch ruleset**
 2. Name 填 `protect-main`，Enforcement 选 **Active**，Target 选 **Include default branch**
 3. 勾下面两项后 **Create**：
-   - **Require status checks to pass** → 搜索并添加 `validate` 与 `web-contract`
+   - **Require status checks to pass** → 搜索并添加 `validate`、`web-contract` 与 `web-smoke`
    - **Block force pushes**
 
 说明：
@@ -98,7 +98,11 @@ CI 的 `validate` 与 `web-contract` 两个 job 必须全绿才能合并。规�
 | `archive.limits` | 单文件 ≤ 1 MB、总量 ≤ 8 MB、≤ 200 个文件、目录深度 ≤ 3 |
 
 > 静态检查只拦「一眼能看出的错」。能不能真的跑起来（加载、点击流、console 是否干净）
-> 由后续的无头浏览器 job 判定；两边都绿才算合格。
+> 由 `web-smoke` job 判定：它用**假壳 + 真实 Chromium** 跑一遍（连接/断开、5 个错误码、
+> 三档视口截图），失败时去 Actions 下载 `web-smoke-report` 看截图。
+>
+> 本地想跑同一个测试：`npm ci && npx playwright install chromium && npx playwright test`
+> （只有测试用 Playwright；`scripts/*.mjs` 仍然零依赖，不装也能构建与校验）。
 
 ## 四、本地开发（不需要真壳）
 

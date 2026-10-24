@@ -160,19 +160,42 @@ const ERROR_COPY = {
 
 /* ══ 壳的契约：3 个方法 + 1 个事件（浏览器里用 mock） ══ */
 const createMock = ()=>{
-  const m = {
-    _s:'disconnected', _t:null, _err:null, _cb:null,
-    async connect(){ m._s='connecting'; m._err=null; emit();
+  const listeners = [];
+  const s = { status:'disconnected', since:null, serverName:null, error:null };
+  const fire = ()=>{ listeners.slice().forEach(fn=>{ try{ fn({ ...s }); }catch(e){} }); };
+  return {
+    async connect(cfg){ s.status='connecting'; s.error=null; fire();
       await new Promise(r=>setTimeout(r,900));
-      m._s='connected'; m._t=Date.now(); emit(); tick(); },
-    async disconnect(){ m._s='disconnected'; m._t=null; emit(); },
-    async state(){ return { status:m._s, since:m._t, serverName:selected.name, error:m._err }; },
-    on(cb){ m._cb=cb; },
+      s.status='connected'; s.since=Date.now(); s.serverName=selected.name; fire(); },
+    async disconnect(){ s.status='disconnected'; s.since=null; fire(); },
+    async state(){ return { ...s, serverName:selected.name }; },
+    on(cb){ listeners.push(cb); },
   };
-  return m;
 };
 const BRIDGE = window.__BRIDGE__ || createMock();
-function emit(){ BRIDGE._cb && Promise.resolve(BRIDGE._cb()).catch(()=>{}); }
+
+/* 界面自己的状态：只由 state() 与事件更新。
+   不要读壳的内部字段（真壳里没有），否则一上真机就只剩“已断开”。 */
+let snap = { status:'disconnected', since:null, serverName:null, error:null };
+
+function applySnapshot(s){
+  if(!s) return;
+  snap = {
+    status: s.status || snap.status,
+    since: typeof s.since === 'number' ? s.since : null,
+    serverName: s.serverName || snap.serverName,
+    error: s.error || null,
+  };
+  if(snap.error){
+    const c = ERROR_COPY[snap.error.code] || ERROR_COPY.INTERNAL;
+    show(c.k, c.title, c.body);
+  } else {
+    clearNotice(); render();
+  }
+}
+
+/* 事件只是“通知”，真相以 state() 为准 */
+BRIDGE.on(()=>{ BRIDGE.state().then(applySnapshot, ()=>{}); });
 
 /* ══ 以下全是租户可改的界面逻辑 ══ */
 const SERVERS=[
@@ -196,47 +219,31 @@ $('servers').onclick = e=>{
   const b=e.target.closest('.srv'); if(!b) return;
   selected=SERVERS.find(x=>x.id===b.dataset.id);
   [...$('servers').children].forEach(c=>c.setAttribute('aria-selected', c===b));
-  if(BRIDGE._s==='connected') BRIDGE.disconnect().then(()=>BRIDGE.connect({serverId:selected.id}));
+  if(snap.status==='connected') BRIDGE.disconnect().then(()=>BRIDGE.connect({serverId:selected.id}));
   else render();
 };
 
 pwr.onclick = ()=>{
-  if(BRIDGE._s==='connected') return BRIDGE.disconnect();
+  if(snap.status==='connected') return BRIDGE.disconnect();
   clearNotice();
   BRIDGE.connect({serverId:selected.id});
 };
 
 function render(){
-  const s=BRIDGE._s; pwr.dataset.s=s;
+  const s=snap.status; pwr.dataset.s=s;
   pwr.textContent = s==='connected'?'断开':s==='connecting'?'连接中':'连接';
   stateEl.textContent = ({disconnected:'已断开',connecting:'正在连接…',connected:'已连接',error:'连接失败'})[s]||s;
   subEl.innerHTML = s==='connected'
-    ? `<span class="timer">${fmt(BRIDGE._t)}</span> · ${selected.flag} ${selected.name}`
+    ? `<span class="timer">${fmt(snap.since)}</span> · ${selected.flag} ${selected.name}`
     : s==='connecting' ? `正在连接 ${selected.name}` : `${selected.flag} ${selected.name} · ${selected.ping} ms`;
   prog.style.strokeDashoffset = s==='connected'?0:s==='connecting'?180:326.7;
 }
 function fmt(t){ if(!t) return '00:00:00'; const s=Math.floor((Date.now()-t)/1000);
   return [s/3600|0,(s/60|0)%60,s%60].map(n=>String(n).padStart(2,'0')).join(':'); }
-function tick(){ if(BRIDGE._s==='connected'){ render(); setTimeout(tick,1000);} }
+function tick(){ if(snap.status==='connected'){ render(); setTimeout(tick,1000);} }
 function show(k,title,body){ noticeEl.style.display='block'; noticeEl.dataset.k=k;
   noticeEl.innerHTML=`<b>${title}</b><br>${body}`; stateEl.textContent=title; subEl.textContent=''; pwr.dataset.s='error'; pwr.textContent='重试'; }
 function clearNotice(){ noticeEl.style.display='none'; }
-
-/* 壳的"通知"不是真相：收到事件后回问 state() */
-BRIDGE.on(()=>{ BRIDGE.state().then(applySnapshot, ()=>{}); });
-
-function applySnapshot(s){
-  if(!s) return;
-  BRIDGE._s = s.status || BRIDGE._s;
-  BRIDGE._t = s.since ?? null;
-  BRIDGE._err = s.error || null;
-  if(BRIDGE._err){
-    const c = ERROR_COPY[BRIDGE._err.code] || ERROR_COPY.INTERNAL;
-    show(c.k, c.title, c.body);
-  } else {
-    clearNotice(); render();
-  }
-}
 
 /* 每次加载/刷新必须问一次 state()：事件不会重放 */
 BRIDGE.state().then(applySnapshot, ()=>{});
@@ -257,11 +264,8 @@ document.querySelector('.devbar').onclick=e=>{
     const cur=getComputedStyle(document.documentElement).getPropertyValue('--brand').trim();
     return document.documentElement.style.setProperty('--brand', c[(c.indexOf(cur)+1)%c.length]); }
   const code = { ok:null, expired:'EXPIRED', frozen:'FROZEN', limit:'DEVICE_LIMIT' }[k];
-  BRIDGE.disconnect().then(()=>{
-    BRIDGE._err = code ? { code, message:'' } : null;
-    if(code){ const c = ERROR_COPY[code]; show(c.k, c.title, c.body); }
-    else { clearNotice(); render(); }
-  });
+  applySnapshot({ status: code ? 'error' : 'disconnected', since:null,
+    error: code ? { code, message:'' } : null });
 };
 </script>
 </body>

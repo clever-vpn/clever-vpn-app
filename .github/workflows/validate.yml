@@ -1,4 +1,4 @@
-# PR 门禁：brand.json 校验 + web 自包含检查 + web 契约（studio-app.md §2）
+# PR 门禁：brand.json / web 静态契约 / web 行为冒烟
 name: validate
 
 on:
@@ -41,5 +41,37 @@ jobs:
         with:
           name: web-contract-report
           path: web-contract-report.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  web-smoke:
+    name: web-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: 安装测试依赖
+        run: npm ci
+      - name: 生成 web/_brand.js（构建产物，不入库）
+        run: node scripts/build.mjs
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: 安装 Chromium
+        run: npx playwright install --with-deps chromium
+      - name: 行为冒烟（假壳 + 真实 Chromium）
+        run: npx playwright test
+      - name: 上传报告与截图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-smoke-report
+          path: |
+            playwright-report/
+            test-results/
           if-no-files-found: warn
           retention-days: 14
