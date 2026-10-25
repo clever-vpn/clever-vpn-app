@@ -144,14 +144,17 @@ cd web && python3 -m http.server 8000
 
 **不要**在本地 build 后手工上传作为正式发布。
 
-1. 改完走分支 + PR（`validate` + `web-contract` 两个 job 会拦）；
+1. 改完走分支 + PR（`validate` + `web-contract` + `web-smoke` 三个 required check 会拦）；
 2. 合并后 → Actions → **release** → **Run workflow**：
+   - `platform` 选 `web` / `android` / `apple` / `windows`，或 `all`（构建所有已实现的平台）；
+     显式选了还没实现的平台会直接失败，只告诉你缺什么，**不会**建出没有资产的 release；
    - `tag` 留空 = 自动在上个 release 上 patch+1（首次 `v0.1.0`）；
    - 也可指定 `1.2.3` 或 `v1.2.3`（统一按 `v` 前缀发布）。
-3. 产物：`clever-vpn-app-web-vX.Y.Z.zip`（`dist/web` + `manifest.json`）。
+3. 产物：`clever-vpn-app-web-vX.Y.Z.zip`（`dist/web` + `manifest.json`）；原生包
+   `apk`/`aab`、`dmg`、`msix`/`exe` 由各端 `shell-*/ci/build.*` 产出。
 
-原生安装包（`exe` / `dmg` / `apk` / `aab`）将来由 `shell-*/` 的 CI job 产出，
-**目前还没有**（壳未实现）——届时本文会给出新的 workflow 与需要的 Secrets。
+原生安装包**目前还没有**（壳未实现、`kit/kit.version` 仍是 `0.0.0`）。
+需要的 Secrets 与壳的构建入口契约见 `docs/RELEASE.md`。
 
 ## 5. 常见失败
 

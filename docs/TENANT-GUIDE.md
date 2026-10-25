@@ -170,5 +170,7 @@ dist/
 ```
 
 平台安装包由 `shell-*/` 的构建产出（Windows `msix`/`exe`、macOS `dmg`、Android `apk`），
-**由 GitHub Actions 生成并在 Release 里提供下载**；壳尚未实现前，CI 只产上面这份
-web 包。
+**由 GitHub Actions 生成并在 Release 里提供下载**：Actions → `release` → Run workflow，
+`platform` 选 `android` / `apple` / `windows`（`all` = 所有已实现的平台）。
+壳落地前选这三项会**直接失败并告诉你缺什么**（不会建出没有资产的 release），
+现阶段只有 `web` 能出包。细节见 [`RELEASE.md`](RELEASE.md)。

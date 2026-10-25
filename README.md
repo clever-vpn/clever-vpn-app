@@ -52,7 +52,9 @@ bridge.on('state', s => {})        // 状态变化事件
   ```
 - 提交信息用 Conventional Commits（中文描述），例如：
   `feat(web): 节点列表支持延迟排序` / `fix(bridge): 连接超时重试`
-- 发布走 Actions → `release`（`workflow_dispatch`）：tag 留空则自动 `patch+1`，统一 `v` 前缀。
+- 发布走 Actions → `release`（`workflow_dispatch`）：先选 `platform`
+  （`all` / `web` / `android` / `apple` / `windows`），`tag` 留空则自动 `patch+1`，统一 `v` 前缀。
+  细节见 [`docs/RELEASE.md`](docs/RELEASE.md)。
 
 ## 文档
 
@@ -61,6 +63,7 @@ bridge.on('state', s => {})        // 状态变化事件
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 分层、为什么用 Web UI、壳如何隔离 |
 | [`docs/BRIDGE.md`](docs/BRIDGE.md) | bridge 方法、状态结构、错误码、安全约束 |
 | [`docs/TENANT-GUIDE.md`](docs/TENANT-GUIDE.md) | 租户改造清单（改哪些、别改哪些） |
+| [`docs/RELEASE.md`](docs/RELEASE.md) | 出包：平台选择、各端构建入口契约、需要的 Secrets |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | 分支 / 提交 / 发布流程 |
 
 ## 许可
