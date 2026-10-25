@@ -4,9 +4,9 @@
 
 > 🤖 **用 agent 自动实施**：本仓库内置 skill `.github/skills/white-label-app/SKILL.md`。
 > 在 fork 里直接对 Copilot 说「按 white-label-app skill 改品牌」，它会按步骤改
-> `brand.json` / `web/` 并跑 `node scripts/build.mjs --check` 验收。
+> `app.json` / `assets/icon.png` / `web/` 并跑 `node scripts/build.mjs --check` 验收。
 >
-> **保证边界**：我们只保证缺省配置（只改 `brand.json` 与本文允许的文件）下的构建与
+> **保证边界**：我们只保证缺省配置（只改 `app.json`、`assets/icon.png` 与本文允许的文件）下的构建与
 > 发布正确；改 `shell-*/`、`kit/`、`scripts/` 就要自己维护。
 > **发布只走 GitHub Actions**，不要在本地 build 后手工上传当正式发布。
 
@@ -45,29 +45,65 @@
 
 ```bash
 # 1. 改配置（10 分钟）
-vi brand.json
+vi app.json
 
-# 2. 改界面（可选）
+# 2. 换图标
+cp ~/my-icon.png assets/icon.png      # 1024×1024、无透明、≤ 1MB
+
+# 3. 改界面（可选）
 vi web/index.html
-
-# 3. 出包
-node scripts/build.mjs          # 产物在 dist/
 ```
 
-或直接在 GitHub Actions 里跑 **Build / release** —— **不需要安装 Xcode / Visual Studio / Android Studio**。
+改完提交 → CI 跑完三道门禁 → 合并 → 出包。**不需要安装 Xcode / Visual Studio / Android Studio。**
 
-## 二、`brand.json` 字段
+> 一句话记住：**一个配置、一张图、一个页面 —— 其余都是机器的事。**
+
+## 二、你只需要改 `app.json`
+
+`app.json` 是你的**基本信息**：让界面能看出这是谁家的 App，并让注册/购买导向你的 CRM。
+**App 侧不需要向平台索取任何值。**
+
+```json
+{
+  "name": "星辰加速",
+  "short_name": "星辰",
+  "color": "#3b82f6",
+  "crm": { "base": "https://crm.example.com", "id": "8f3a1c2e-…" },
+  "links": { "terms": "", "privacy": "", "support": "" }
+}
+```
 
 | 字段 | 必填 | 说明 |
 |---|:--:|---|
-| `tenant_id` | ✓ | 平台分配给你的租户 ID（UUID），**不要自己编** |
 | `name` | ✓ | 应用显示名（App 名称 / 窗口标题）|
 | `short_name` | ✓ | 桌面快捷方式、任务栏用 |
-| `bundle_id` | ✓ | 四个平台各自的包名，反向域名格式，**上架后不可更改** |
-| `brand_color` | ✓ | 主色，`#rrggbb` |
+| `color` | ✓ | 主色，`#rrggbb` |
+| `links.{terms,privacy,support}` | ✗ | 条款 / 隐私 / 客服链接 |
+| `crm.base` | ✗ | 你的 CRM 地址（`https://`，无尾斜杠）；**留空 = 不提供登录/购买入口** ⬜ 待实现 |
+| `crm.id` | ✗ | 从 CRM 后台复制的实例标识（UUID），用于出包前校验地址对不对 ⬜ 待实现 |
 
-| `kit_version` | ✓ | 使用的闭源核心版本（由平台告知）|
-| `links` | ✗ | 条款 / 隐私 / 客服链接 |
+> 字段语义以 `clever-vpn-docs` 的 `docs/contracts/app-json.md` 为准；本表只是操作索引。
+> **白名单**：`app.json` 不接受上表之外的任何字段，写错会直接构建失败。
+
+### 不在 `app.json` 里的东西
+
+| 参数 | 在哪 | 谁来改 |
+|---|---|---|
+| `bundle_id.{android,ios,macos,windows}` | `app.lock.json` | 机器生成（Studio 接入时）；**上架后不可改** |
+| 闭源核心版本 | `kit/kit.version` | **平台发布时更新，你不要动** |
+| cf-api 地址 | kit 内嵌 | —— |
+| 图标路径 | 固定 `assets/icon.png` | 不要改路径，换文件就行 |
+
+### 2.1 图标
+
+| 项 | 规定 |
+|---|---|
+| 路径 | 固定 `assets/icon.png` |
+| 规格 | 1024×1024、PNG、**无透明通道**、≤ 1 MB |
+| 为什么不能透明 | App Store 会直接拒包；Android 自适应图标前景也会被裁 |
+| 各平台尺寸 | **CI 自动生成**，你只需要这一张图 |
+
+仓库自带的 `assets/icon.png` 是占位图：本地构建只警告，**正式出包会失败**。
 
 ## 三、`web/` 里可以改什么
 
@@ -95,7 +131,7 @@ CI 的 `validate` 与 `web-contract` 两个 job 必须全绿才能合并。规�
 | `bridge.frozen-neutral` | `FROZEN` 必须是中性文案（不得对用户做定性） |
 | `brand.from-window-brand` | 品牌值只允许出现在 `index.html` 的兜底默认值里 |
 | `assets.no-external` | 不得引用任何外部 URL 资源（CDN / 字体 / 图片 / import） |
-| `archive.limits` | 单文件 ≤ 1 MB、总量 ≤ 8 MB、≤ 200 个文件、目录深度 ≤ 3 |
+| `web.limits` | 单文件 ≤ 1 MB、总量 ≤ 8 MB、≤ 200 个文件、目录深度 ≤ 3 |
 
 > 静态检查只拦「一眼能看出的错」。能不能真的跑起来（加载、点击流、console 是否干净）
 > 由 `web-smoke` job 判定：它用**假壳 + 真实 Chromium** 跑一遍（连接/断开、5 个错误码、

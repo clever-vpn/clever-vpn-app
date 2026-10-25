@@ -1,4 +1,4 @@
-# PR 门禁：brand.json / web 静态契约 / web 行为冒烟
+# PR 门禁：app.json + 图标 / web 静态契约 / web 行为冒烟
 name: validate
 
 on:
@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - name: 校验 brand.json 与 web
+      - name: 校验 app.json / app.lock.json / assets/icon.png
         run: node scripts/build.mjs --check
 
   web-contract:

@@ -90,7 +90,7 @@ bridge.on('state', (snapshot) => { /* 与 state() 结构一致 */ });
 | 必须 | 说明 |
 |---|---|
 | **方法白名单** | 仅 `connect` / `disconnect` / `state` 三个字符串 |
-| **资源目录白名单** | 只允许加载内置资源目录（或 `brand.json` 声明的域名）|
+| **资源目录白名单** | 只允许加载内置资源目录（或 `app.json` 的 `crm.base` / `links` 声明的域名）|
 | **禁止外部导航** | 拦掉 `window.open` / 非白名单跳转 |
 | **禁止危险能力** | 不暴露 `readFile` / `exec` / 任意 URL 打开 |
 

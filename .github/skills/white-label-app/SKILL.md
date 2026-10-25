@@ -1,6 +1,6 @@
 ---
 name: white-label-app
-description: **WORKFLOW SKILL** — 把 clever-vpn-app 变成自有品牌应用并由 GitHub Actions 出包。USE FOR: 改应用名/图标/配色/包名、改登录/套餐/购买页、`brand.json` 校验失败、`node scripts/build.mjs` 报错、不知道怎么在 CI 出包、不确定 `web/` 里能改什么。DO NOT USE FOR: 改原生壳 `shell-*/` 或 bridge 契约（那是修改项目本身，要同步 `docs/BRIDGE.md` 并三端一起改）、改闭源核心 `kit/`、部署 CRM（用 `white-label-crm`）。INVOKES: 读 `brand.json`/`web/`、`node scripts/build.mjs --check`、分支 + PR。
+description: **WORKFLOW SKILL** — 把 clever-vpn-app 变成自有品牌应用并由 GitHub Actions 出包。USE FOR: 改应用名/图标/配色、`app.json` 校验失败、图标被拒（尺寸/alpha）、`node scripts/build.mjs` 报错、改登录/套餐/购买页、不知道怎么在 CI 出包、不确定 `web/` 里能改什么。DO NOT USE FOR: 改原生壳 `shell-*/` 或 bridge 契约（那是修改项目本身，要同步 `docs/BRIDGE.md` 并三端一起改）、改钉死的 `app.lock.json`（包名）、改闭源核心 `kit/`、部署 CRM（用 `white-label-crm`）。INVOKES: 读 `app.json`/`assets/icon.png`/`web/`、`node scripts/build.mjs --check`、分支 + PR。
 ---
 
 # 白标 App 定制（租户视角）
@@ -9,7 +9,7 @@ description: **WORKFLOW SKILL** — 把 clever-vpn-app 变成自有品牌应用�
 
 ## 0. 保证边界（先读这一条）
 
-我们只保证**缺省状态**（只改 `brand.json` 与我们指定的配置/页面文件）下的构建与发
+我们只保证**缺省状态**（只改 `app.json`、`assets/icon.png` 与我们指定的配置/页面文件）下的构建与发
 布正确性。你当然可以改任何代码（AGPL 开源），但一旦改了 `shell-*/`、`kit/`、
 `scripts/`，构建与发布就由你自己负责，上游更新时也可能冲突。
 
@@ -32,31 +32,64 @@ private 消耗你的配额；macOS runner 计费倍率 ×10）。
 > 以后改了 job 名称，要同步更新 required 列表，否则 PR 永远卡在
 > `Expected — Waiting for status to be reported`。
 
-## 1. 先向服务方索取 2 个值
+## 1. 你不需要向平台索取任何配置
 
-| 值 | 用途 | 备注 |
+**一个配置、一张图、一个页面 —— 其余都是机器的事。**
+
+| 参数 | 在哪 | 谁来改 |
 |---|---|---|
-| `tenant_id` | `brand.json.tenant_id` | 平台分配，**UUID 格式，不要自己编** |
-| `kit_version` | `brand.json.kit_version` | 闭源核心版本，当前未发布时为 `0.0.0` |
+| cf-api 地址 | kit 内嵌 | —— |
+| 闭源核心版本 | `kit/kit.version` | **平台发布时更新，你不要动** |
+| `bundle_id` | `app.lock.json` | 机器生成（Studio 接入时）；上架后不可改 |
 
-将来 CRM 上线后还会有一个 `crm_base`（CRM 地址）；**契约落地前不要加进
-`brand.json`**（校验会失败）。
+你只需要：① 自己的 CRM 地址与 `crm.id`（从 CRM 后台复制）② 应用名 / 颜色 / 链接 ③ 一张图标。
 
-## 2. 改 `brand.json`（唯一必改文件）
+> `crm.base` / `crm.id` 契约已定但**尚未实现**（⬜）：现在写入会通过校验，但 App 还不会用它登录/购买。
+
+## 2. 改 `app.json`（租户信息）
 
 ```bash
-$EDITOR brand.json
+$EDITOR app.json
+```
+
+```json
+{
+  "name": "星辰加速",
+  "short_name": "星辰",
+  "color": "#3b82f6",
+  "crm": { "base": "https://crm.example.com", "id": "8f3a1c2e-…" },
+  "links": { "terms": "", "privacy": "", "support": "" }
+}
 ```
 
 | 字段 | 必填 | 校验规则 |
 |---|:--:|---|
-| `tenant_id` | ✓ | UUID（`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`） |
 | `name` | ✓ | 非空字符串（应用名 / 窗口标题） |
 | `short_name` | ✓ | 非空字符串（桌面快捷方式、任务栏） |
-| `bundle_id.{android,ios,macos,windows}` | ✓ | 反向域名，如 `com.acme.vpn`；**禁止 `com.example.*`**；上架后不可改 |
-| `brand_color` | ✓ | `#rrggbb` |
-| `kit_version` | ✓ | 非空字符串 |
-| `links.{terms,privacy,support}` | ✗ | 条款 / 隐私 / 客服链接 |
+| `color` | ✓ | `#rrggbb` |
+| `links.{terms,privacy,support}` | ✗ | `https://` 或留空 |
+| `crm.base` | ✗ | `https://` 开头且无尾斜杠，或留空 ⬜ |
+| `crm.id` | ✗ | UUID，或留空 ⬜ |
+
+**白名单**：`app.json` 不接受其它字段（`bundle_id`、`kit_version`、`brand_color` 都会直接构建失败）。
+
+### 2.1 换图标 `assets/icon.png`
+
+| 项 | 规定 | 失败后果 |
+|---|---|---|
+| 尺寸 | 1024×1024 | 构建报错并给出实际尺寸 |
+| 格式 | PNG | 报错 |
+| 透明通道 | **必须无 alpha**（RGB） | 报错；带 alpha 的图过了构建也会被 App Store 拒 |
+| 大小 | ≤ 1 MB | 报错 |
+| 路径 | 固定 `assets/icon.png` | 不要改路径，换文件就行 |
+
+```bash
+# macOS 自查（约 1 秒）
+sips -g pixelWidth -g pixelHeight -g hasAlpha assets/icon.png
+```
+
+各平台尺寸（Android 自适应图标 / iOS / macOS / Windows `.ico` / 托盘 / 商店）**由 CI 生成**，
+你不用准备。仓库自带的是**占位图**：本地构建只警告，正式出包会失败。
 
 改完立刻校验：
 
@@ -91,7 +124,7 @@ CI 里是 `web-contract` job。规则来自 `clever-vpn-docs` 的 `docs/contract
 | `bridge.frozen-neutral` | `FROZEN` 必须中性文案（不得对用户定性） |
 | `brand.from-window-brand` | 品牌值只允许出现在 `index.html` 的兜底默认值里 |
 | `assets.no-external` | 不得引用任何外部 URL 资源 |
-| `archive.limits` | 单文件 ≤ 1 MB、总量 ≤ 8 MB、≤ 200 文件、目录 ≤ 3 层 |
+| `web.limits` | 单文件 ≤ 1 MB、总量 ≤ 8 MB、≤ 200 文件、目录 ≤ 3 层 |
 
 还有一个**行为冒烟** job `web-smoke`：假壳 + 真实 Chromium，跑连接/断开、5 个错误码文案、
 三档视口截图、console 无 error。本地跑：`npm ci && npx playwright install chromium && npx playwright test`
@@ -124,9 +157,14 @@ cd web && python3 -m http.server 8000
 
 | 现象 | 原因 / 处理 |
 |---|---|
-| `tenant_id 必须是 UUID` | 填了自编值或少了段，向服务方确认 |
-| `bundle_id.x 必须是反向域名格式` | 用了 `NextVPN`、`com.acme`（只有两段）等 |
+| `app.json 不接受字段 "xxx"` | 把构建参数写进了 `app.json`：`bundle_id` 属于 `app.lock.json`，`kit_version` 属于 `kit/kit.version` |
+| `app.json: color 必须是 #rrggbb` | 主色要 6 位十六进制，不能写 `#3b82f6ff` 或 `rgb(...)` |
+| `app.json: crm.base 必须是 https:// 开头且无尾斜杠` | 删掉尾部的 `/`；没有 CRM 就整段留空 |
+| `app.lock.json: bundle_id.x 必须是反向域名格式` | 用了 `NextVPN`、`com.acme`（只有两段）等；该文件手改无效，要让 Studio 重新生成 |
 | `⚠ bundle_id 还是示例值` | 仍是 `com.example.*`，上架前必须改 |
+| `assets/icon.png 必须是 1024×1024` | 报错信息会给实际尺寸；重导一张方形图 |
+| `assets/icon.png 必须无透明通道` | 用 `sips -s format png` 导出前先去掉 alpha，或把背景铺满 |
+| `缺少 assets/icon.png`（正式出包时） | 占位图不允许上架，必须换自己的图标 |
 | `web/index.html 引用了外部资源` | 删掉 CDN `<script src="https://…">` / `<link href="https://…">` |
 | `bridge.xxx() 不在 bridge@1 白名单内` | 只允许 `connect` / `disconnect` / `state` / `on`；自己封装的方法请改名 |
 | `页面加载后必须调用一次 state()` | 在 `<script>` 末尾加 `BRIDGE.state().then(render)` |
@@ -137,7 +175,8 @@ cd web && python3 -m http.server 8000
 
 - [ ] `node scripts/build.mjs --check` 通过
 - [ ] `node scripts/check-web.mjs` 通过（CI 的 `web-contract` job）
+- [ ] `assets/icon.png` 是自己的 1024×1024 无 alpha 图（不是占位图）
 - [ ] `bundle_id` 四端都是自己的反域名、非 `com.example.*`
 - [ ] `links` 指向真实条款/隐私/客服页
 - [ ] Actions `release` 成功，Release 里有 zip 资产
-- [ ] 未修改 `shell-*/`、`kit/`、`scripts/`（改了就要自己维护）
+- [ ] 未修改 `shell-*/`、`kit/`、`scripts/`、`app.lock.json`（改了就要自己维护）

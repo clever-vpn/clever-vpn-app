@@ -28,9 +28,9 @@ chore(kit): 升级 android-kit 到 2.1.4
 
 | 目录 | 谁能改 |
 |---|---|
-| `web/`、`brand.json` | 租户 / 任何贡献者 |
+| `web/`、`app.json`、`assets/` | 租户 / 任何贡献者 |
 | `docs/` | 任何贡献者 |
-| `shell-*/`、`kit/`、`scripts/` | 需维护者审核（见 `CODEOWNERS`）|
+| `shell-*/`、`kit/`、`scripts/`、`app.lock.json` | 需维护者审核（见 `CODEOWNERS`）|
 
 ## 发布
 
@@ -44,7 +44,9 @@ chore(kit): 升级 android-kit 到 2.1.4
 
 PR 必须通过 `validate` 工作流：
 
-- `brand.json` 必填字段齐全、格式合法
+- `app.json` 必填字段齐全、白名单内、格式合法（`color` / `crm.base` / `crm.id`）
+- `app.lock.json` 结构合法（`lock_version` + 四端 `bundle_id`）
+- `assets/icon.png` 为 1024×1024、无 alpha、≤ 1 MB
 - `web/index.html` 存在
 - `web/` 不得引用外部 http(s) 脚本/样式（必须自包含）
 

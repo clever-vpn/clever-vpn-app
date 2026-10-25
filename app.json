@@ -1,0 +1,14 @@
+{
+  "name": "Next VPN",
+  "short_name": "NextVPN",
+  "color": "#3b82f6",
+  "crm": {
+    "base": "",
+    "id": ""
+  },
+  "links": {
+    "terms": "",
+    "privacy": "",
+    "support": ""
+  }
+}

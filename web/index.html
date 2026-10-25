@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Next VPN</title>
-<!-- 由 scripts/build.mjs 从 brand.json 生成；本地预览缺失时走下面的兜底默认值 -->
+<!-- 由 scripts/build.mjs 从 app.json 生成；本地预览缺失时走下面的兜底默认值 -->
 <script src="./_brand.js" onerror="void 0"></script>
 <style>
   /* ── 品牌变量：只允许改这 8 个（其余一律引用变量） ── */
@@ -141,11 +141,11 @@
 </div>
 
 <script>
-/* ══ 品牌（构建时注入） ══ */
-const B = Object.assign({ name:'Next VPN', brand_color:'#3b82f6' }, window.BRAND || {});
+/* ══ 品牌（构建时注入：app.json → window.BRAND） ══ */
+const B = Object.assign({ name:'Next VPN', color:'#3b82f6' }, window.BRAND || {});
 document.getElementById('brandname').textContent = B.name;
 document.title = B.name;
-document.documentElement.style.setProperty('--brand', B.brand_color);
+document.documentElement.style.setProperty('--brand', B.color);
 
 /* ══ 错误码 → 文案（bridge@1）══
    UI 不判断业务，只按壳给的 code 选文案。

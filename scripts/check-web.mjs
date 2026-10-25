@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WEB = join(ROOT, 'web');
-const CONTRACT = 1; // studio-app.md 的 studio_contract 版本
+const CONTRACT = 2; // studio-app.md 的 studio_contract 版本
 
 /** 归档规模上限（studio-app.md §1；只放宽不升版，收紧要升版） */
 const LIMITS = { fileBytes: 1_000_000, totalBytes: 8_000_000, files: 200, depth: 3 };
@@ -68,7 +68,7 @@ const files = [];
 (function walk(dir) {
   for (const name of readdirSync(dir).sort()) {
     if (name === '.DS_Store') {
-      fail('archive.limits', rel(dir, name), 0, '不要提交 .DS_Store');
+      fail('web.limits', rel(dir, name), 0, '不要提交 .DS_Store');
       continue;
     }
     const abs = join(dir, name);
@@ -95,29 +95,29 @@ function linesOf(text) {
   return text.split('\n').map((t, i) => [i + 1, t]);
 }
 
-// ── archive.limits ────────────────────────────────────────
+// ── web.limits ───────────────────────────────────────────
 {
   let total = 0;
   for (const f of files) {
     total += f.size;
     if (f.size > LIMITS.fileBytes) {
-      fail('archive.limits', f.rel, 0, `单文件 ${f.size} B 超过上限 ${LIMITS.fileBytes} B`);
+      fail('web.limits', f.rel, 0, `单文件 ${f.size} B 超过上限 ${LIMITS.fileBytes} B`);
     }
     const depth = f.rel.split('/').length - 1;
     if (depth > LIMITS.depth) {
-      fail('archive.limits', f.rel, 0, `目录深度 ${depth} 超过上限 ${LIMITS.depth}`);
+      fail('web.limits', f.rel, 0, `目录深度 ${depth} 超过上限 ${LIMITS.depth}`);
     }
   }
   if (files.length > LIMITS.files) {
-    fail('archive.limits', 'web/', 0, `文件数 ${files.length} 超过上限 ${LIMITS.files}`);
+    fail('web.limits', 'web/', 0, `文件数 ${files.length} 超过上限 ${LIMITS.files}`);
   }
   if (total > LIMITS.totalBytes) {
-    fail('archive.limits', 'web/', 0, `总量 ${total} B 超过上限 ${LIMITS.totalBytes} B`);
+    fail('web.limits', 'web/', 0, `总量 ${total} B 超过上限 ${LIMITS.totalBytes} B`);
   }
-  record('archive.limits', true, `${files.length} 个文件 / ${total} B`);
+  record('web.limits', true, `${files.length} 个文件 / ${total} B`);
 
   if (!files.some((f) => f.rel === 'index.html')) {
-    fail('archive.limits', 'web/index.html', 0, 'archive 根必须存在 index.html');
+    fail('web.limits', 'web/index.html', 0, 'web/ 根必须存在 index.html');
   }
 }
 
@@ -215,17 +215,17 @@ const NATIVE_HOOKS = [
 
 // ── brand.from-window-brand ───────────────────────────────
 {
-  let brand;
+  let app;
   try {
-    brand = JSON.parse(readFileSync(join(ROOT, 'brand.json'), 'utf8'));
+    app = JSON.parse(readFileSync(join(ROOT, 'app.json'), 'utf8'));
   } catch (e) {
-    console.error(`✗ 读不到 brand.json：${e.message}`);
+    console.error(`✗ 读不到 app.json：${e.message}`);
     process.exit(2);
   }
   const literals = [
-    ['name', brand.name],
-    ['short_name', brand.short_name],
-    ['brand_color', brand.brand_color],
+    ['name', app.name],
+    ['short_name', app.short_name],
+    ['color', app.color],
   ].filter(([, v]) => typeof v === 'string' && v.length > 0);
 
   let ok = true;
