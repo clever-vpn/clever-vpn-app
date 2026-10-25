@@ -1,0 +1,14 @@
+{
+  "lock_version": 1,
+  "bundle_id": {
+    "android": "com.example.nextvpn",
+    "ios": "com.example.nextvpn",
+    "macos": "com.example.nextvpn",
+    "windows": "com.example.nextvpn"
+  },
+  "generator": {
+    "name": "template",
+    "version": "1"
+  },
+  "source_revision": "template"
+}

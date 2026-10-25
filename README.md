@@ -4,28 +4,32 @@
 
 给租户（VPN 服务商）用的**可品牌化客户端**：一份 Web UI，三个平台的薄外壳，核心逻辑在闭源 `kit` 里。
 
-- **本仓库开源**：外壳 + UI（租户 fork 后只改 `brand.json` 和 `web/`）
+- **本仓库开源**：外壳 + UI（租户 fork 后只改 `app.json`、`assets/icon.png` 和 `web/`）
 - **核心闭源**：`clever-vpn-*-kit`（Go），以预编译二进制分发，见 `kit/fetch-kit.sh`
 
 ## 结构
 
 ```
-brand.json          品牌配置（租户唯一必改的配置文件）
-web/                界面（租户主要改这里，纯 HTML/CSS/JS）
+app.json            这个 App 是什么：名称 / 主色 / CRM 入口 / 链接（租户改这里）
+assets/icon.png     图标源图：1024×1024 PNG、无 alpha、≤ 1MB
+web/                界面（纯 HTML/CSS/JS，租户改这里）
+app.lock.json       包名 + 血缘（机器生成，手改无效）
+kit/kit.version     闭源核心版本（平台维护）
 shell-windows/      WinUI 3 + WebView2
 shell-macos/        SwiftUI + WKWebView + NetworkExtension 系统扩展
 shell-android/      Kotlin + VpnService
-kit/                闭源核心的获取脚本（仓库不放二进制）
-scripts/build.mjs   构建：注入品牌 → 生成 dist/
+scripts/build.mjs   构建：校验 → 注入 window.BRAND → 生成 dist/
 docs/               架构、bridge 契约、租户指南
 ```
 
 ## 租户三步
 
-1. 改 `brand.json`（名称 / 包名 / 图标 / 主色 / API 域名）
-2. 改 `web/` 里的文字与配色（也可以只改 `brand.json`）
-3. 在 Actions 里跑 **Build**，或本地 `node scripts/build.mjs`
+1. 改 `app.json`（名称 / 主色 / CRM 地址）
+2. 换 `assets/icon.png`（1024×1024、无透明通道）
+3. 改 `web/` 里的文字与配色（或者交给 `clever-vpn-app-studio` 用对话改）
 
+> 包名与核心版本**不在**你改的文件里：包名在 `app.lock.json`（机器生成），
+> 核心版本在 `kit/kit.version`（平台发布时更新）。
 > 不需要安装 Xcode / Android Studio / Visual Studio —— 构建在 GitHub Actions 上完成。
 
 ## Bridge 契约（壳与 UI 的唯一接口）

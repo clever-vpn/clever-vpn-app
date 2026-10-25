@@ -44,10 +44,10 @@ This repository is an **open-source white-label client shell**: one web UI + thr
 native shells, with the proprietary core shipped as prebuilt binaries from
 `clever-vpn-kit`.
 
-- **Tenants only fork this repo and edit `brand.json` + `web/`.** Any change that would
-  force a tenant to also edit `shell-*/` or `kit/` is a design regression — push the
+- **Tenants only fork this repo and edit `app.json` + `assets/icon.png` + `web/`.** Any change that would
+  force a tenant to also edit `shell-*/`, `kit/` or `app.lock.json` is a design regression — push the
   behavior into `web/` instead.
-- **Brand values must come from `brand.json` only.** Never hardcode product name, bundle
+- **Brand values must come from `app.json` only.** Never hardcode product name, bundle
   id, API domain, icon paths or primary color inside `web/` or `shell-*/`.
 - `dist/` and `web/_brand.js` are **build outputs** (gitignored). Never commit them and
   never hand-edit generated files.
@@ -65,5 +65,5 @@ native shells, with the proprietary core shipped as prebuilt binaries from
 - Docs under `docs/` are updated in the same PR as the code they describe.
 - This is a **public** repository: never commit secrets, keystores, signing certificates,
   tokens, private endpoints, or real tenant/customer data. Use placeholders in examples.
-- Respect `CODEOWNERS`: `web/` and `brand.json` are tenant-editable; `shell-*/`, `kit/`,
+- Respect `CODEOWNERS`: `web/`, `app.json` and `assets/` are tenant-editable; `shell-*/`, `kit/`,
   `scripts/` and `docs/` changes need maintainer review.

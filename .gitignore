@@ -11,7 +11,7 @@ playwright-report/
 blob-report/
 .playwright/
 
-# 构建期由 brand.json 生成，不入库
+# 构建期由 app.json 生成，不入库
 web/_brand.js
 
 # 闭源核心二进制（由 kit/fetch-kit.sh 下载）
