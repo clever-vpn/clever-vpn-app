@@ -36,9 +36,13 @@ chore(kit): 升级 android-kit 到 2.1.4
 
 发布统一走 Actions → **release**（`workflow_dispatch`）：
 
+- `platform` ⇒ 选 `all` / `web` / `android` / `apple` / `windows`；
+  `all` 构建所有已实现的平台，显式选未实现的平台会直接失败（不建空 release）
 - `tag` 留空 ⇒ 自动取最新 release 的 `patch + 1`（如 `v1.2.3` → `v1.2.4`）
 - 指定 `tag` ⇒ 用你给的版本
 - 统一 `v` 前缀
+
+各端构建入口与所需 Secrets 见 [`docs/RELEASE.md`](docs/RELEASE.md)。
 
 ## 校验门禁
 

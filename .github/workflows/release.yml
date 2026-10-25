@@ -1,4 +1,15 @@
-# 发布：tag 解析（留空自动 patch+1）→ 构建 → 建 tag + release
+# 发布：手选平台出包（web / android / apple / windows）→ 统一建 tag + release
+#
+# 输入（Actions → release → Run workflow）：
+#   platform  all = 构建所有「已实现」的平台（未实现的告警并跳过）；
+#             web / android / apple / windows = 只构建该平台，
+#             显式选了尚未实现的平台会直接失败（不产出半成品 release）。
+#   tag       留空 = 在最新 release 上 patch+1；统一 v 前缀。
+#
+# 原生壳的构建入口是各目录下的 ci 脚本（壳落地时补上，契约见 docs/RELEASE.md）：
+#   shell-android/ci/build.sh   → 产物写入 shell-android/ci/out/
+#   shell-macos/ci/build.sh     → 产物写入 shell-macos/ci/out/
+#   shell-windows/ci/build.ps1  → 产物写入 shell-windows/ci/out/
 #
 # 与 clever-vpn-cf-api 的发布口径保持一致：统一 v 前缀，成功后创建 tag 与 release。
 name: release
@@ -6,6 +17,17 @@ name: release
 on:
   workflow_dispatch:
     inputs:
+      platform:
+        description: '平台：all（所有已实现的）/ web / android / apple / windows'
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - web
+          - android
+          - apple
+          - windows
       tag:
         description: '发布 tag（如 v1.0.0）。留空则自动 bump 最新 release 的 patch+1'
         required: false
@@ -14,11 +36,21 @@ on:
 permissions:
   contents: write
 
+# 两次发布同时跑会抢同一个 tag（自动 bump 会算成同一个版本），串行化
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  release:
+  # 解析 tag + 判断哪些平台真的能构建（壳的 ci 入口存在 且 kit 版本已发布）
+  plan:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.resolve.outputs.release_tag }}
+      kit_version: ${{ steps.cap.outputs.kit_version }}
+      want_android: ${{ steps.cap.outputs.want_android }}
+      want_apple: ${{ steps.cap.outputs.want_apple }}
+      want_windows: ${{ steps.cap.outputs.want_windows }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,33 +83,262 @@ jobs:
           fi
           echo "release_tag=$TAG" >> "$GITHUB_OUTPUT"
 
+      - name: 平台可构建性检查
+        id: cap
+        env:
+          PLATFORM: ${{ inputs.platform }}
+        run: |
+          set -euo pipefail
+          KIT_VERSION="$(sed 's/#.*//' kit/kit.version | tr -d '[:space:]')"
+
+          case "$PLATFORM" in
+            all | web | android | apple | windows) ;;
+            *) echo "::error::未知平台 ${PLATFORM}（可选 all / web / android / apple / windows）"; exit 1 ;;
+          esac
+
+          kit_ok=true
+          case "$KIT_VERSION" in '' | 0.0.0) kit_ok=false ;; esac
+
+          entry_for() {
+            case "$1" in
+              android) echo "shell-android/ci/build.sh" ;;
+              apple)   echo "shell-macos/ci/build.sh" ;;
+              windows) echo "shell-windows/ci/build.ps1" ;;
+            esac
+          }
+
+          why_not() {
+            if [ "$kit_ok" != true ]; then
+              echo "kit/kit.version 是占位值（${KIT_VERSION:-空}），闭源核心尚未发布"
+            else
+              echo "缺少 $(entry_for "$1")，原生壳尚未实现"
+            fi
+          }
+
+          case "$PLATFORM" in
+            all) REQ="android apple windows" ;;
+            web) REQ="" ;;
+            *)   REQ="$PLATFORM" ;;
+          esac
+
+          want_android=false
+          want_apple=false
+          want_windows=false
+          blocked=0
+          for p in $REQ; do
+            entry="$(entry_for "$p")"
+            if [ "$kit_ok" = true ] && [ -f "$entry" ]; then
+              eval "want_${p}=true"
+              echo "✓ ${p}：构建入口 ${entry}"
+            elif [ "$PLATFORM" = all ]; then
+              echo "::warning::跳过 ${p}：$(why_not "$p")"
+            else
+              echo "::error::无法构建 ${p}：$(why_not "$p")。改用 platform=web，或先落地壳与核心。"
+              blocked=1
+            fi
+          done
+
+          {
+            echo "kit_version=$KIT_VERSION"
+            echo "want_android=$want_android"
+            echo "want_apple=$want_apple"
+            echo "want_windows=$want_windows"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$blocked" = 1 ]; then
+            echo "::error::所选平台当前无法构建：本次不产生产物，也不建 release。"
+            exit 1
+          fi
+
+  # web 包永远构建：它既是独立产物，也是所有原生包内嵌的 UI（dist/）
+  web:
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-
-      - name: 构建
+      - name: 构建 dist/
         env:
-          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
         run: node scripts/build.mjs
-
-      - name: 打包产物
+      - name: 打包 web zip
+        env:
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
         run: |
           cd dist && zip -qr "../clever-vpn-app-web-${RELEASE_TAG}.zip" . && cd ..
-        env:
-          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+          ls -l "clever-vpn-app-web-${RELEASE_TAG}.zip"
+      # 给原生壳用：解压到 dist/ 就是 web/ + manifest.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-zip
+          path: clever-vpn-app-web-*.zip
+          if-no-files-found: error
+          retention-days: 7
 
+  android:
+    needs: [plan, web]
+    if: needs.plan.outputs.want_android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+      - name: 拉取闭源核心（android）
+        env:
+          PLATFORM: android
+        run: bash kit/fetch-kit.sh "${{ needs.plan.outputs.kit_version }}"
+      - name: 出包（apk / aab）
+        env:
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+          KIT_VERSION: ${{ needs.plan.outputs.kit_version }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: bash shell-android/ci/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-pkg
+          path: shell-android/ci/out/
+          if-no-files-found: error
+          retention-days: 7
+
+  apple:
+    needs: [plan, web]
+    if: needs.plan.outputs.want_apple == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+      - name: 拉取闭源核心（apple）
+        env:
+          PLATFORM: apple
+        run: bash kit/fetch-kit.sh "${{ needs.plan.outputs.kit_version }}"
+      - name: 出包（dmg / pkg）
+        env:
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+          KIT_VERSION: ${{ needs.plan.outputs.kit_version }}
+          APPLE_CERT_P12_BASE64: ${{ secrets.APPLE_CERT_P12_BASE64 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: bash shell-macos/ci/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apple-pkg
+          path: shell-macos/ci/out/
+          if-no-files-found: error
+          retention-days: 7
+
+  windows:
+    needs: [plan, web]
+    if: needs.plan.outputs.want_windows == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+      - name: 拉取闭源核心（windows）
+        shell: bash
+        env:
+          PLATFORM: windows
+        run: bash kit/fetch-kit.sh "${{ needs.plan.outputs.kit_version }}"
+      - name: 出包（msix / exe）
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+          KIT_VERSION: ${{ needs.plan.outputs.kit_version }}
+          WINDOWS_PFX_BASE64: ${{ secrets.WINDOWS_PFX_BASE64 }}
+          WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
+        run: pwsh -NoProfile -File shell-windows/ci/build.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-pkg
+          path: shell-windows/ci/out/
+          if-no-files-found: error
+          retention-days: 7
+
+  # 只有所有「被选中」的平台都成功才建 release；没被选中的平台算 skipped，不阻塞
+  release:
+    needs: [plan, web, android, apple, windows]
+    if: |
+      always() &&
+      needs.plan.result == 'success' &&
+      needs.web.result == 'success' &&
+      contains(fromJSON('["success","skipped"]'), needs.android.result) &&
+      contains(fromJSON('["success","skipped"]'), needs.apple.result) &&
+      contains(fromJSON('["success","skipped"]'), needs.windows.result)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: 收集并核对产物
+        env:
+          WANT_ANDROID: ${{ needs.plan.outputs.want_android }}
+          WANT_APPLE: ${{ needs.plan.outputs.want_apple }}
+          WANT_WINDOWS: ${{ needs.plan.outputs.want_windows }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          find artifacts -type f \
+            \( -name '*.zip' -o -name '*.apk' -o -name '*.aab' -o -name '*.dmg' -o -name '*.pkg' \
+               -o -name '*.msix' -o -name '*.msixbundle' -o -name '*.msi' -o -name '*.exe' \) \
+            -exec cp {} out/ \;
+          ls -l out
+
+          expect() { # $1=want 标记 $2=平台名 $3=后缀正则
+            [ "$1" = true ] || return 0
+            local f hit=0
+            for f in out/*; do
+              if [ -e "$f" ] && [[ "$(basename "$f")" =~ $3 ]]; then hit=1; break; fi
+            done
+            if [ "$hit" = 0 ]; then
+              echo "::error::平台 $2 已选择，但 out/ 里没有 $3 产物 —— 拒绝建空 release"
+              exit 1
+            fi
+          }
+          expect "$WANT_ANDROID" android '\.(apk|aab)$'
+          expect "$WANT_APPLE" apple '\.(dmg|pkg)$'
+          expect "$WANT_WINDOWS" windows '\.(msix|msixbundle|msi|exe)$'
+
+          has_zip=0
+          for f in out/*.zip; do if [ -e "$f" ]; then has_zip=1; fi; done
+          if [ "$has_zip" = 0 ]; then echo "::error::缺少 web zip"; exit 1; fi
       - name: 创建 tag + release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG="${{ steps.resolve.outputs.release_tag }}"
+          TAG="${{ needs.plan.outputs.tag }}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "$TAG" || true
           git push origin "$TAG" || true
+          shopt -s nullglob
+          ASSETS=(out/*)
+          echo "资产：${ASSETS[*]}"
           gh release create "$TAG" \
             --title "$TAG" \
             --generate-notes \
-            "clever-vpn-app-web-${TAG}.zip" \
-          || gh release upload "$TAG" "clever-vpn-app-web-${TAG}.zip" --clobber
+            "${ASSETS[@]}" \
+          || gh release upload "$TAG" "${ASSETS[@]}" --clobber
