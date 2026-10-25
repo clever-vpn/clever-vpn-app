@@ -32,13 +32,12 @@ private 消耗你的配额；macOS runner 计费倍率 ×10）。
 > 以后改了 job 名称，要同步更新 required 列表，否则 PR 永远卡在
 > `Expected — Waiting for status to be reported`。
 
-## 1. 先向服务方索取 3 个值
+## 1. 先向服务方索取 2 个值
 
 | 值 | 用途 | 备注 |
 |---|---|---|
 | `tenant_id` | `brand.json.tenant_id` | 平台分配，**UUID 格式，不要自己编** |
 | `kit_version` | `brand.json.kit_version` | 闭源核心版本，当前未发布时为 `0.0.0` |
-| `api_base` | `brand.json.api_base` | cf-api 基址，必须 `https://` |
 
 将来 CRM 上线后还会有一个 `crm_base`（CRM 地址）；**契约落地前不要加进
 `brand.json`**（校验会失败）。
@@ -56,7 +55,6 @@ $EDITOR brand.json
 | `short_name` | ✓ | 非空字符串（桌面快捷方式、任务栏） |
 | `bundle_id.{android,ios,macos,windows}` | ✓ | 反向域名，如 `com.acme.vpn`；**禁止 `com.example.*`**；上架后不可改 |
 | `brand_color` | ✓ | `#rrggbb` |
-| `api_base` | ✓ | `https://` 开头 |
 | `kit_version` | ✓ | 非空字符串 |
 | `links.{terms,privacy,support}` | ✗ | 条款 / 隐私 / 客服链接 |
 

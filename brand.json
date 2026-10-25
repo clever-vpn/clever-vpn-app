@@ -10,7 +10,6 @@
     "windows": "com.example.nextvpn"
   },
   "brand_color": "#3b82f6",
-  "api_base": "https://api.example.com",
   "kit_version": "0.0.0",
   "links": {
     "terms": "",
