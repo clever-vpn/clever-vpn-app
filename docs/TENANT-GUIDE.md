@@ -65,7 +65,7 @@ node scripts/build.mjs          # 产物在 dist/
 | `short_name` | ✓ | 桌面快捷方式、任务栏用 |
 | `bundle_id` | ✓ | 四个平台各自的包名，反向域名格式，**上架后不可更改** |
 | `brand_color` | ✓ | 主色，`#rrggbb` |
-| `api_base` | ✓ | 你的后端地址，必须 `https://` |
+
 | `kit_version` | ✓ | 使用的闭源核心版本（由平台告知）|
 | `links` | ✗ | 条款 / 隐私 / 客服链接 |
 

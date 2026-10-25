@@ -39,7 +39,6 @@ for (const p of ['android', 'ios', 'macos', 'windows']) {
   else if (v.startsWith('com.example.')) console.log(`  ⚠ bundle_id.${p} 还是示例值（上架前必须改）`);
 }
 if (!brand.brand_color || !hexColor.test(brand.brand_color)) errors.push('brand_color 必须是 #rrggbb');
-if (!brand.api_base || !/^https:\/\//.test(brand.api_base)) errors.push('api_base 必须以 https:// 开头');
 
 const webEntry = join(ROOT, 'web', 'index.html');
 if (!existsSync(webEntry)) errors.push('缺少 web/index.html');
@@ -57,7 +56,7 @@ if (CHECK_ONLY) { console.log('  ✓ check 模式：未生成产物'); process.e
 // ── 3. 注入品牌 ──
 const brandJs = `/* 由 scripts/build.mjs 生成，请勿手改 */
 window.BRAND = ${JSON.stringify(
-  { tenant_id: brand.tenant_id, name: brand.name, short_name: brand.short_name, brand_color: brand.brand_color, api_base: brand.api_base, links: brand.links || {} },
+  { tenant_id: brand.tenant_id, name: brand.name, short_name: brand.short_name, brand_color: brand.brand_color, links: brand.links || {} },
   null, 2)};\n`;
 writeFileSync(join(ROOT, 'web', '_brand.js'), brandJs);
 ok('生成 web/_brand.js');
