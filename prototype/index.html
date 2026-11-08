@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>连接</title>
+<link rel="stylesheet" href="app.css">
+<script src="brand.js"></script>
+<script>document.title = window.BRAND.name;</script>
+<script src="mock.js"></script>
+<script>MOCK.requireLogin();</script>
+</head>
+<body>
+<div class="page">
+
+  <!-- iOS 导航栏：标题居中。状态在下面大圆钮那里，不在这里重复。 -->
+  <header class="topbar">
+    <h1 data-brand-name></h1>
+    <a class="nav-btn end" href="settings.html" aria-label="设置" data-allow>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>
+    </a>
+  </header>
+
+  <div id="notice"></div>
+
+  <section class="hero">
+    <button class="pwr" id="pwr" data-s="disconnected" aria-live="polite">
+      <span class="sweep" aria-hidden="true"></span>
+      <span class="halo" aria-hidden="true"></span>
+      <span class="halo d2" aria-hidden="true"></span>
+      <span class="sheen" aria-hidden="true"></span>
+      <span class="ring"></span>
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" aria-hidden="true">
+        <path d="M12 3v9"/><path d="M6.3 6.5a8 8 0 1 0 11.4 0"/>
+      </svg>
+    </button>
+    <!-- 状态 + 计时同一行：已连接 00:12:34。线路名不在这里重复，下面有线路卡片 -->
+    <div class="state-row">
+      <span class="state-label" id="label">未连接</span>
+      <span class="state-time" id="time" hidden>00:00:00</span>
+    </div>
+    <!-- 上下行：图标 + 数字，一行搞定。写"下行/上行"两个词是多余的 ——
+         箭头本身就说明了方向，读屏用 .vh 补回语义 -->
+    <div class="stats" id="stats" hidden>
+      <div class="stat">
+        <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v13M6.5 12.5 12 18l5.5-5.5"/></svg>
+        <b id="down">0 KB</b><span class="vh">下行</span>
+      </div>
+      <div class="stat">
+        <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5"/></svg>
+        <b id="up">0 KB</b><span class="vh">上行</span>
+      </div>
+    </div>
+    <!-- 当前线路：点它去线路列表。图标/名称由 brand+mock 给 -->
+    <a class="quick" id="quick" href="lines.html" data-allow>
+      <span id="curLine" style="display:inline-flex;align-items:center;gap:8px"></span>
+      <span class="chev">›</span>
+    </a>
+  </section>
+
+  <div class="sec">最近使用</div>
+  <div class="list" id="recent" role="radiogroup" aria-label="最近使用"></div>
+
+</div>
+<nav data-tabs="connect"></nav>
+
+<script src="ui.js"></script>
+<script src="connect.js"></script>
+</body>
+</html>

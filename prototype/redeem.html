@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>兑换礼包</title>
+<link rel="stylesheet" href="app.css">
+<script src="brand.js"></script>
+<script>document.title = window.BRAND.name + ' · 兑换礼包';</script>
+<script src="mock.js"></script>
+<script>MOCK.requireLogin();</script>
+</head>
+<!-- data-allow：兑换是本地交互，别被"未订阅 → 去套餐页"的守卫拦住 -->
+<body data-allow>
+<div class="page">
+
+  <header class="topbar">
+    <a class="nav-btn" href="account.html" aria-label="返回" data-allow>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12 15 19.5"/></svg>
+    </a>
+    <h1>兑换礼包</h1>
+  </header>
+
+  <!-- 对应 app-crm 契约 §2.9.7：POST /redeem {code}。
+       礼包只改权益（天数 / 流量 / 重置本月），不改金额；
+       失败一律 200 + ok:false + reason，所以这里只显示一句整句理由，不做分渠道报错。 -->
+  <label class="field-label" for="code">兑换码</label>
+  <input class="input" id="code" autocapitalize="characters" autocomplete="off"
+         spellcheck="false" placeholder="例如 GUOQING7">
+  <p class="note" id="err" style="margin-top:8px;color:var(--bad)" hidden></p>
+
+  <button class="btn primary" id="btnRedeem" style="margin-top:16px" disabled>兑换</button>
+
+  <!-- 成功：一张结果卡，说清"兑换到了什么"和"有效期到哪天" -->
+  <div class="card" id="ok" hidden style="margin-top:16px">
+    <div class="state-label" id="okName" style="font-size:var(--fs-body)"></div>
+    <p class="note" id="okWhat" style="margin-top:4px"></p>
+    <p class="note" id="okUntil" style="margin-top:2px"></p>
+  </div>
+
+  <p class="note" style="margin-top:16px">兑换码不区分大小写。</p>
+
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  function paintBtn() {
+    $('btnRedeem').disabled = !$('code').value.trim();
+  }
+
+  function appliedText(r) {
+    var parts = [];
+    if (r.applied.days) parts.push('+' + r.applied.days + ' 天');
+    if (r.applied.gb) parts.push('+' + r.applied.gb + ' GB');
+    if (r.applied.reset_month) parts.push('本月用量已重置');
+    var line = parts.join(' · ');
+    if (r.opened) line = '已为你开通订阅' + (line ? ' · ' + line : '');
+    return line;
+  }
+
+  function submit() {
+    var code = $('code').value.trim();
+    if (!code) return;
+    $('err').hidden = true;
+    $('ok').hidden = true;
+    $('btnRedeem').disabled = true;
+    $('btnRedeem').textContent = '兑换中…';
+
+    MOCK.redeem(code).then(function (r) {
+      $('btnRedeem').textContent = '兑换';
+      if (!r.ok) {
+        // 业务性拒绝：原样显示 CRM 给的整句理由（App 不拼文案）
+        $('err').textContent = r.reason || '兑换失败，请稍后再试';
+        $('err').hidden = false;
+        paintBtn();
+        $('code').focus();
+        $('code').select();
+        return;
+      }
+      $('okName').textContent = '已兑换：' + r.promotion_name;
+      $('okWhat').textContent = appliedText(r);
+      $('okUntil').textContent = r.expires_at ? '有效期至 ' + r.expires_at : '永久有效';
+      $('ok').hidden = false;
+      $('code').value = '';
+      paintBtn();
+    });
+  }
+
+  $('btnRedeem').onclick = submit;
+  $('code').oninput = function () { $('err').hidden = true; paintBtn(); };
+  $('code').onkeydown = function (e) { if (e.key === 'Enter') submit(); };
+  paintBtn();
+})();
+</script>
+</body>
+</html>

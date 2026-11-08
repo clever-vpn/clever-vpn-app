@@ -67,18 +67,25 @@ vi web/index.html
 {
   "name": "星辰加速",
   "short_name": "星辰",
+  "tagline": "一键连接，全球畅行。",
   "color": "#3b82f6",
+  "icon": "assets/icon.png",
+  "logo": "assets/logo.svg",
   "crm": { "base": "https://crm.example.com", "id": "8f3a1c2e-…" },
-  "links": { "terms": "", "privacy": "", "support": "" }
+  "links": { "terms": "", "privacy": "", "support": "", "website": "https://example.com" }
 }
 ```
 
 | 字段 | 必填 | 说明 |
 |---|:--:|---|
-| `name` | ✓ | 应用显示名（App 名称 / 窗口标题）|
+| `name` | ✓ | 应用显示名（App 名称 / 窗口标题 / 欢迎页主标题）|
 | `short_name` | ✓ | 桌面快捷方式、任务栏用 |
+| `tagline` | ✗ | 一句话副标题，显示在欢迎页产品名下方（≤ 24 字，纯文本）|
 | `color` | ✓ | 主色，`#rrggbb` |
-| `links.{terms,privacy,support}` | ✗ | 条款 / 隐私 / 客服链接 |
+| `icon` | ✗ | 应用图标文件，默认 `assets/icon.png`（必须在 `assets/` 下）|
+| `logo` | ✗ | 界面里的品牌标记，PNG 或 SVG，不填就回落到 `icon` |
+| `links.{terms,privacy,support}` | ✗ | 条款 / 隐私 / 客服链接。`support` 就是欢迎页右上角「?」（不填就不显示）|
+| `links.website` | ✗ | 官网，显示在欢迎页页脚（只显示域名）|
 | `crm.base` | ✗ | 你的 CRM 地址（`https://`，无尾斜杠）；**留空 = 不提供登录/购买入口** ⬜ 待实现 |
 | `crm.id` | ✗ | 从 CRM 后台复制的实例标识（UUID），用于出包前校验地址对不对 ⬜ 待实现 |
 
@@ -92,16 +99,20 @@ vi web/index.html
 | `bundle_id.{android,ios,macos,windows}` | `app.lock.json` | 机器生成（Studio 接入时）；**上架后不可改** |
 | 闭源核心版本 | `kit/kit.version` | **平台发布时更新，你不要动** |
 | cf-api 地址 | kit 内嵌 | —— |
-| 图标路径 | 固定 `assets/icon.png` | 不要改路径，换文件就行 |
+| 图标路径 | `app.json` 的 `icon`，默认 `assets/icon.png` | 换文件就行，路径一般不用动 |
 
-### 2.1 图标
+### 2.1 图标与标记
 
 | 项 | 规定 |
 |---|---|
-| 路径 | 固定 `assets/icon.png` |
-| 规格 | 1024×1024、PNG、**无透明通道**、≤ 1 MB |
+| 应用图标 | `app.json` 的 `icon`，默认 `assets/icon.png`。路径必须是 `assets/` 或 `web/` 下的相对路径 |
+| 图标规格 | 1024×1024、PNG、**无透明通道**、≤ 1 MB |
 | 为什么不能透明 | App Store 会直接拒包；Android 自适应图标前景也会被裁 |
 | 各平台尺寸 | **CI 自动生成**，你只需要这一张图 |
+| 界面标记 | `app.json` 的 `logo`：欢迎页 / 顶栏显示的那一版。可以是透明 PNG 或 **SVG**（单色矢量才能跟着主色变色），不填就用 `icon` |
+| 标记放哪 | 放 `assets/`（推荐，构建会拷进 `web/`），也可以直接放 `web/`（那就不重复拷）|
+
+> 为什么分两个：商店图标有硬规定（1024²、不能透明），而界面上要的标记往往是一版单色矢量 —— 两个很少是同一个文件。
 
 仓库自带的 `assets/icon.png` 是占位图：本地构建只警告，**正式出包会失败**。
 

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>欢迎</title>
+<link rel="stylesheet" href="app.css">
+<script src="brand.js"></script>
+<script>document.title = window.BRAND.name;</script>
+<script src="mock.js"></script>
+<script>MOCK.allowAnon();</script>
+<script>if (MOCK.S.session) location.replace('index.html');</script>
+</head>
+<body class="no-tabs">
+<!-- 欢迎页 = 供应商给用户的第一屏，三段式：
+     ① 标记   ② 产品名 + 副标题   ③ 操作区
+     内容全部来自 app.json（name / tagline / logo / links.support / links.website），
+     页面里没有写死一个品牌字。 -->
+<div class="welcome">
+
+  <!-- 右上角帮助入口：指向 links.support，没配就整块不渲染。
+       外链不在 WebView 内导航：能走 bridge.open 就走，走不了由壳拦截 + 这里的新标签页兜底。 -->
+  <div class="welcome-head">
+    <a class="help" data-link="support" target="_blank" rel="noopener"
+       aria-label="帮助与支持" title="帮助与支持"><span>?</span></a>
+  </div>
+
+  <!-- 中段 + 操作区：合看成一个组，在剩余空间里垂直居中并整体上移，
+       「开始使用」落在拇指区，不用低头去找。 -->
+  <div class="welcome-main">
+    <div class="welcome-brand">
+      <span class="welcome-logo" data-brand-logo></span>
+      <div class="welcome-name">
+        <h1 data-brand-name></h1>
+        <p data-brand-tagline></p>
+      </div>
+    </div>
+
+    <div class="welcome-actions">
+      <a class="btn primary" href="login.html">开始使用</a>
+      <a class="btn plain" href="plans.html">查看套餐价格</a>
+    </div>
+  </div>
+
+  <footer class="welcome-foot">
+    <!-- 官网只显示域名，href 是完整的 links.website -->
+    <a class="site" data-link="website" data-link-host target="_blank" rel="noopener"></a>
+    <p class="note">
+      继续即表示同意
+      <a data-link="terms">服务条款</a> 与 <a data-link="privacy">隐私政策</a>
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>

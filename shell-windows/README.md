@@ -10,8 +10,8 @@ Windows 薄壳：**WinUI 3 + WebView2**，把 `dist/web` 全屏承载，并向�
 | 托盘 | 托盘图标 + 右键菜单（显示 / 连接 / 断开 / 退出）|
 | 自启 | 跟随系统启动（可选，租户可在设置里开）|
 | 隧道 | 调用闭源 `windows-kit.dll`（`kit/fetch-kit.sh` 获取）|
-| bridge | `CoreWebView2.WebMessageReceived` ↔ `PostWebMessageAsJson`，方法白名单 3 个 |
-| 资源 | 只加载内置 `dist/web`（禁止外部导航）|
+| bridge | `CoreWebView2.WebMessageReceived` ↔ `PostWebMessageAsJson`，方法白名单 4 个（`connect` / `disconnect` / `state` / `open`）|
+| 资源 | 只加载内置 `dist/web`；**外链一律拦下来交系统浏览器**（`NavigationStarting` → `Process.Start`），WebView 自己永不导航到外部 |
 | 打包 | `msix`（商店）与 `exe`（自签/直发）两种 |
 
 ## 落地方式
@@ -27,3 +27,4 @@ Windows 薄壳：**WinUI 3 + WebView2**，把 `dist/web` 全屏承载，并向�
 3. 关闭重开 → 状态正确恢复
 4. 改 `web/` 一行文字 → 重新构建 → 界面随之变化
 5. Windows 125% / 150% 缩放显示正常
+6. 点欢迎页的「?」/ 页脚官网 → **系统浏览器**打开，客户端窗口不跳走（支付页同理）

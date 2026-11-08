@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>账户</title>
+<link rel="stylesheet" href="app.css">
+<script src="brand.js"></script>
+<script>document.title = window.BRAND.name + ' · 账户';</script>
+<script src="mock.js"></script>
+<script>MOCK.requireLogin();</script>
+</head>
+<body>
+<div class="page">
+
+  <!-- 根页面（底部 tab 之一）：没有"返回上一级"，切页只走底部导航 -->
+  <header class="topbar">
+    <h1>账户</h1>
+  </header>
+  <!-- 未订阅 / 已过期：顶部整块是订阅入口（Nord 的做法） -->
+  <div id="cta"></div>
+
+  <!-- 已订阅：订阅状态卡片 -->
+  <div class="card" id="subCard" hidden style="margin-top:8px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <span class="state-label" style="font-size:22px">当前订阅</span>
+      <span class="pill on" id="subBadge">生效中</span>
+    </div>
+    <div class="list tight" style="margin-top:12px;border:0">
+      <div class="row"><span class="grow">套餐</span><span class="val" id="vPlan"></span></div>
+      <div class="row"><span class="grow">到期时间</span><span class="val" id="vExp"></span></div>
+      <div class="row"><span class="grow">已用设备</span><span class="val" id="vDev"></span></div>
+    </div>
+    <a class="btn plain" href="plans.html" data-allow style="margin-top:8px">续费或更换套餐</a>
+  </div>
+
+  <div class="sec">账号</div>
+  <div class="list">
+    <div class="row">
+      <span class="grow">邮箱<div class="sub" id="vEmail"></div></span>
+    </div>
+  </div>
+
+  <div class="sec">更多</div>
+  <div class="list">
+    <a class="row" href="redeem.html" data-allow><span class="grow">兑换礼包</span><span class="chev">›</span></a>
+    <button class="row" data-act="soon"><span class="grow">通知</span><span class="chev">›</span></button>
+    <a class="row" data-link="support"><span class="grow">帮助与客服</span><span class="chev">›</span></a>
+    <a class="row" data-link="terms"><span class="grow">服务条款</span><span class="chev">›</span></a>
+    <a class="row" data-link="privacy"><span class="grow">隐私政策</span><span class="chev">›</span></a>
+  </div>
+
+  <div class="list" style="margin-top:16px">
+    <button class="row" id="logout" data-allow><span class="grow" style="color:var(--bad)">退出登录</span></button>
+  </div>
+
+  <p class="note" style="margin-top:16px">版本 0.1.0（原型）</p>
+
+</div>
+<nav data-tabs="account"></nav>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var S = MOCK.S, D = MOCK.DATA;
+
+  $('vEmail').textContent = S.email;
+
+  if (S.status === 'active') {
+    $('subCard').hidden = false;
+    $('vPlan').textContent = D.sub.plan;
+    $('vExp').textContent = D.sub.expires;
+    $('vDev').textContent = D.sub.devices + ' / ' + D.sub.limit;
+    if (S.reason === 'DEVICE_LIMIT') {
+      $('subBadge').textContent = '设备超限';
+      $('subBadge').style.background = 'rgba(255,159,10,.16)';
+      $('subBadge').style.color = 'var(--warn)';
+    }
+  } else {
+    var bad = S.reason === 'EXPIRED' || S.reason === 'FROZEN';
+    var title = S.reason === 'EXPIRED' ? '订阅已到期' : S.reason === 'FROZEN' ? '账号暂时不可用' : '还没有订阅';
+    var sub = S.reason
+      ? S.reasonText
+      : '订阅后才能连接；现在可以先看看套餐。';
+    $('cta').innerHTML =
+      '<div class="card" style="margin-top:8px">' +
+      '<div style="font-size:22px;font-weight:600">' + title + '</div>' +
+      '<p style="margin-top:4px">' + sub + '</p>' +
+      '<a class="btn primary" href="plans.html" style="margin-top:16px">' +
+      (bad ? '查看续费方案' : '查看套餐') + '</a></div>';
+  }
+
+  $('logout').onclick = function () { MOCK.logout(); };
+  document.querySelectorAll('[data-act="soon"]').forEach(function (b) {
+    b.onclick = function () {
+      b.querySelector('.chev').textContent = '即将支持';
+    };
+  });
+})();
+</script>
+</body>
+</html>

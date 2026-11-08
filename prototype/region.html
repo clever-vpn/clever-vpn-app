@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>地区</title>
+<link rel="stylesheet" href="app.css">
+<script src="brand.js"></script>
+<script>document.title = window.BRAND.name + ' · 地区';</script>
+<script src="mock.js"></script>
+<script>MOCK.requireLogin();</script>
+</head>
+<!-- data-allow：本地选项页，不该被"未订阅 → 去套餐页"的守卫拦住 -->
+<body data-allow>
+<div class="page">
+
+  <header class="topbar">
+    <a class="nav-btn" href="split.html" aria-label="返回">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12 15 19.5"/></svg>
+    </a>
+    <h1>地区</h1>
+  </header>
+
+  <input class="input" id="q" type="search" placeholder="搜索国家和地区" autocomplete="off" style="margin-top:12px">
+
+  <div class="list" id="list" role="radiogroup" aria-label="地区" style="margin-top:12px"></div>
+
+  <p class="note" id="note" style="margin-top:16px">选中即生效，左上角返回即可。</p>
+
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var SP = MOCK.SETTINGS.split, R = MOCK.REGIONS;
+
+  /* 地区列表：和线路页一样的规矩 —— 平铺不分组（数据里没有"大洲"这种分类）、
+     搜索、选中就地生效 + 勾选，左上角返回 = 确认离开。
+     真实产品这里是"国家和地区"全表（四十多个），所以必须有搜索：
+     没有搜索的四十项列表，用户只能靠滚。 */
+  var CHECK = '<span class="chk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4 10-10"/></svg></span>';
+
+  function rowHtml(r) {
+    var on = r.code === SP.region.code;
+    return (
+      '<button class="row" data-r="' + r.code + '" role="radio" aria-checked="' + on + '">' +
+      '<span class="mono">' + r.code + '</span>' +
+      '<span class="grow">' + r.name + '</span>' +
+      (on ? CHECK : '') +
+      '</button>'
+    );
+  }
+
+  function render() {
+    var q = $('q').value.trim().toLowerCase();
+    var list = R.filter(function (r) {
+      if (!q) return true;
+      return r.name.toLowerCase().indexOf(q) >= 0 || r.code.toLowerCase().indexOf(q) >= 0;
+    });
+
+    $('list').innerHTML = list.length
+      ? list.map(rowHtml).join('')
+      : '<p class="note" style="margin-top:24px">没有匹配的国家或地区</p>';
+
+    $('list').querySelectorAll('[data-r]').forEach(function (b) {
+      b.onclick = function () {
+        var code = b.getAttribute('data-r');
+        if (code === SP.region.code) return;
+        SP.region.code = code;
+        MOCK.saveSettings();
+        render();       // 就地生效，不跳页
+      };
+    });
+  }
+
+  $('q').oninput = render;
+  render();
+})();
+</script>
+</body>
+</html>

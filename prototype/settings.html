@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>设置</title>
+<link rel="stylesheet" href="app.css">
+<script src="brand.js"></script>
+<script>document.title = window.BRAND.name + ' · 设置';</script>
+<script src="mock.js"></script>
+<script>MOCK.requireLogin();</script>
+</head>
+<!-- data-allow：设置是本地选项，不该被"未订阅 → 去套餐页"的守卫拦住 -->
+<body data-allow>
+<div class="page">
+
+  <header class="topbar">
+    <a class="nav-btn" href="index.html" aria-label="返回首页" data-allow>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12 15 19.5"/></svg>
+    </a>
+    <h1>设置</h1>
+  </header>
+
+  <!-- 协议：单选。说明文字用第二行小字，选中打勾（iOS 列表式单选） -->
+  <div class="sec">协议</div>
+  <div class="list" id="protocols"></div>
+
+  <!-- 分流：三项各自有开关，明细在二级页 -->
+  <div class="sec">分流</div>
+  <div class="list">
+    <a class="row" href="split.html"><span class="grow">区域</span><span class="val" id="vRegion"></span><span class="chev">›</span></a>
+    <a class="row" href="split.html"><span class="grow">IP 规则</span><span class="val" id="vIp"></span><span class="chev">›</span></a>
+    <a class="row" href="split.html"><span class="grow">域名规则</span><span class="val" id="vDomain"></span><span class="chev">›</span></a>
+  </div>
+
+  <!-- 连接信息：排障用。中继 / 下游代理 是线路的实现细节，不在选线路的地方展示 -->
+  <div class="sec">连接信息</div>
+  <div class="list">
+    <div class="row"><span class="grow">状态</span><span class="val" id="vStatus"></span></div>
+    <div class="row"><span class="grow">线路</span><span class="val" id="vLine"></span></div>
+    <div class="row"><span class="grow">协议</span><span class="val" id="vProto"></span></div>
+    <div class="row"><span class="grow">中继</span><span class="val" id="vRelay"></span></div>
+    <div class="row"><span class="grow">下游代理</span><span class="val" id="vExit"></span></div>
+  </div>
+
+  <!-- ── 关于：租户在 app.json 的 links 里填，空着就整行不显示 ──
+       位置是固定的（Apple 要求订阅类 App 在应用内能打开隐私政策与服务条款），
+       内容全是品牌值，web/ 里不许硬编码 URL。 -->
+  <div class="card" id="about">
+    <a class="row" data-link="website" data-link-host><span class="grow">官网</span><span class="chev">›</span></a>
+    <a class="row" data-link="support"><span class="grow">帮助与客服</span><span class="chev">›</span></a>
+    <a class="row" data-link="terms"><span class="grow">服务条款</span><span class="chev">›</span></a>
+    <a class="row" data-link="privacy"><span class="grow">隐私政策</span><span class="chev">›</span></a>
+  </div>
+
+  <p class="note" style="margin-top:16px">版本 0.1.0（原型）</p>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var ST = MOCK.SETTINGS, P = MOCK.PROTOCOLS, R = MOCK.REGIONS;
+  var TICK = '<span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4 10-10"/></svg></span>';
+
+  /* ── 协议：点一行就生效，立刻落盘（不用"保存"按钮）── */
+  $('protocols').innerHTML = P.map(function (p) {
+    return '<button class="opt" role="radio" data-p="' + p.id + '" aria-checked="' + (p.id === ST.protocol) + '">' +
+      '<span class="grow">' + p.name + '<span class="ds">' + p.desc + '</span></span>' + TICK +
+      '</button>';
+  }).join('');
+
+  $('protocols').onclick = function (e) {
+    var el = e.target.closest('[data-p]');
+    if (!el) return;
+    ST.protocol = el.getAttribute('data-p');
+    MOCK.saveSettings();
+    $('protocols').querySelectorAll('[data-p]').forEach(function (b) {
+      b.setAttribute('aria-checked', String(b === el));
+    });
+    paint();
+  };
+
+  /* ── 分流三项：只显示"开 / 关"，明细在 split.html ── */
+  function regionName(code) {
+    var r = R.filter(function (x) { return x.code === code; })[0];
+    return r ? r.name : code;
+  }
+  function paintSplit() {
+    var sp = ST.split;
+    $('vRegion').textContent = sp.region.on ? '开 · ' + regionName(sp.region.code) : '关';
+    $('vIp').textContent = sp.ip.on ? '开' : '关';
+    $('vDomain').textContent = sp.domain.on ? '开' : '关';
+  }
+
+  /* ── 连接信息 ── */
+  function protoName(id) {
+    var p = P.filter(function (x) { return x.id === id; })[0];
+    return p ? p.name : id;
+  }
+  // has=false → 无；has 且已连接 → 地址；has 但没连 → 连接后显示
+  function addr(has, value, connected) {
+    if (!has) return '无';
+    return connected ? value : '连接后显示';
+  }
+
+  function paint() {
+    paintSplit();
+    bridge.state().then(function (s) {
+      var on = s.status === 'connected';
+      var line = MOCK.currentLine();
+      $('vStatus').textContent =
+        s.status === 'connected' ? '已连接' :
+        s.status === 'connecting' ? '连接中…' : '未连接';
+      $('vLine').textContent = line.label;
+      $('vProto').textContent = protoName(ST.protocol);
+      // 中继 = 加速节点（IP:端口）；下游代理 = 外部出口（socks 地址）。
+      // 地址来自线路配置，客户端要连上之后才拿到 —— 没连时只说明"有"，不编造地址。
+      $('vRelay').textContent = addr(line.hasRelay, MOCK.DATA.conn.relay, on);
+      $('vExit').textContent = addr(line.hasUpstream, MOCK.DATA.conn.upstream, on);
+    });
+  }
+  paint();
+  window.bridge.on('state', paint);   // 连接状态变了这一行也跟着变，别停在旧值
+
+})();
+</script>
+</body>
+</html>

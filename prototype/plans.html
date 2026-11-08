@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>套餐</title>
+<link rel="stylesheet" href="app.css">
+<script src="brand.js"></script>
+<script>document.title = window.BRAND.name + ' · 套餐';</script>
+<script src="mock.js"></script>
+<script>MOCK.allowAnon();</script>
+</head>
+<!-- data-allow：套餐页就是"未订阅 → 去套餐"这条守卫的**终点** -->
+<body data-allow>
+<div class="page">
+
+  <!-- 根页面（底部 tab 之一）：没有"返回上一级"。
+       唯一例外：未登录时没有 tab 栏，这页其实是欢迎页的下一层 —— 那时才给返回。 -->
+  <header class="topbar">
+    <a class="nav-btn" id="back" href="welcome.html" data-allow aria-label="返回" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12 15 19.5"/></svg>
+    </a>
+    <h1>套餐</h1>
+  </header>
+
+  <div id="stateNote"></div>
+
+  <!-- 套餐卡：字段全部来自 GET /plans（契约 v20）。本页不做销售判断：
+       · 能不能买 → action / reason（CRM 算）
+       · 多少钱     → payable_minor（网页）/ POST /quote（升级）
+       · 用什么付   → payment_methods（网页）或 store_product_id（商店），
+                      按**壳上报的 store** 取其一，见 §2.4.0 -->
+  <div id="cards" style="margin-top:16px"></div>
+
+  <p class="note" style="margin-top:20px" id="foot"></p>
+
+</div>
+<nav data-tabs="plans"></nav>
+
+<script src="ui.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var S = MOCK.S;
+
+  /* 商店轨道：**壳在运行时上报**（bridge.capabilities().store），不是编译期属性
+     —— 同一个 apk 可能来自 Play 也可能是侧载。原型由 mock 读 localStorage 模拟。 */
+  var RAIL = MOCK.rail();
+  var IS_STORE = RAIL !== 'web_checkout';
+  var STORE_KEY = RAIL === 'apple_iap' ? 'apple' : 'google';
+  var STORE_NAME = RAIL === 'apple_iap' ? 'App Store' : 'Google Play';
+
+  /* ── 渲染 ─────────────────────────────────────────────────── */
+
+  function perUnit(p) {
+    if (p.kind !== 'period') return '一次性';
+    if (p.term_days >= 700) return '/ ' + Math.round(p.term_days / 365) + ' 年';
+    if (p.term_days >= 300) return '/ 年';
+    return '/ 月';
+  }
+
+  function specText(p) {
+    var out = [];
+    if (p.kind === 'period') {
+      out.push(p.monthly_quota_gb == null ? '不限流量' : '每月 ' + p.monthly_quota_gb + 'GB');
+      out.push(p.licence_limit + ' 台设备');
+    } else if (p.kind === 'traffic') {
+      out.push(p.traffic_gb + 'GB');
+      out.push(p.validity_days ? p.validity_days + ' 天有效' : '永久有效');
+    } else {
+      out.push(p.traffic_gb + 'GB');
+      out.push('加到现有额度');
+    }
+    if (p.next_expires_at) out.push('续订后至 ' + p.next_expires_at);
+    return out.join(' · ');
+  }
+
+  // 这一档在**本商店**里有没有货（能力匹配，不是销售策略）
+  function available(p) {
+    if (IS_STORE) return !!(p.store_product_id && p.store_product_id[STORE_KEY]);
+    return Array.isArray(p.payment_methods) && p.payment_methods.length > 0;
+  }
+
+  function whyNot(p) {
+    // CRM 给的 reason 更具体（"需要先有周期套餐"之类），优先显示它
+    if (p.action === 'blocked' && p.reason) return p.reason;
+    if (!available(p)) {
+      return IS_STORE ? '此套餐未在 ' + STORE_NAME + ' 上架' : '此套餐不支持网页购买';
+    }
+    return p.reason || '暂不可购买';
+  }
+
+  var BTN = {
+    buy: '立即购买',
+    renewal: '续订',
+    upgrade: '升级',
+    blocked: '不可购买',
+    login_required: '登录后订阅',
+  };
+
+  function cardHtml(p) {
+    var ok = available(p) && p.action !== 'blocked';
+    // 网页轨道：主价 = 活动价 ?? 标价，标价划线（契约 §2.9.3）
+    // 商店轨道：价格由商店定，CRM 价只作参考，不显示活动价/划线
+    var main = IS_STORE ? p.price_minor
+      : (p.promo_price_minor != null ? p.promo_price_minor : p.price_minor);
+    var strike = !IS_STORE && p.promo_price_minor != null ? p.price_minor : null;
+
+    // 置灰时按钮文字统一成「不可购买」——不要在灰按钮上写「在 App Store 购买」
+    var btn = BTN[p.action] || '购买';
+    if (!ok) {
+      btn = '不可购买';
+    } else if (IS_STORE) {
+      if (p.action === 'buy' || p.action === 'renewal' || p.action === 'upgrade') {
+        btn = '在 ' + STORE_NAME + (p.action === 'renewal' ? ' 续订' : p.action === 'upgrade' ? ' 升级' : ' 购买');
+      }
+    } else if ((p.action === 'buy' || p.action === 'renewal') && p.payable_minor != null) {
+      btn += ' · ' + MOCK.money(p.payable_minor);
+    }
+
+    return (
+      '<div class="card plan" style="margin-bottom:12px">' +
+        '<div class="plan-head">' +
+          '<span class="plan-name">' + p.name + '</span>' +
+          (!IS_STORE && p.promo_badge ? '<span class="pill on">' + p.promo_badge + '</span>' : '') +
+        '</div>' +
+        '<div class="plan-price">' +
+          '<b>' + MOCK.money(main) + '</b>' +
+          '<span class="val">' + perUnit(p) + '</span>' +
+          (strike != null ? '<s class="val">' + MOCK.money(strike) + '</s>' : '') +
+        '</div>' +
+        '<p class="plan-spec">' + specText(p) +
+          (IS_STORE ? ' · 价格以 ' + STORE_NAME + ' 为准' : '') + '</p>' +
+        '<button class="btn primary" data-plan="' + p.plan_id + '"' +
+          (ok ? '' : ' disabled') + '>' + btn + '</button>' +
+        (ok ? '' : '<p class="note" style="margin-top:8px">' + whyNot(p) + '</p>') +
+      '</div>'
+    );
+  }
+
+  function paintNote() {
+    if (!S.session) {
+      $('back').hidden = false;   // 匿名没有 tab 栏，给一条退路
+      $('stateNote').innerHTML =
+        '<div class="alert" style="margin-top:12px"><span>价格对所有用户一样；登录后即可订阅。</span></div>';
+    } else if (S.status === 'active') {
+      $('stateNote').innerHTML = '';
+    } else {
+      $('stateNote').innerHTML = '<div class="alert bad" style="margin-top:12px"><span>' +
+        (S.reasonText || '当前没有生效中的订阅') + '</span></div>';
+    }
+  }
+
+  /* ── 交互：只执行 action 指定的那件事 ─────────────────────── */
+
+  function amountOf(p) {
+    // 升级的应付只能来自 /quote（列表不泄露残值）
+    if (p.action === 'upgrade') {
+      return MOCK.quote(p.plan_id).then(function (q) {
+        return {
+          amount: q.payable_minor,
+          extra: q.residual_minor ? '（已抵扣 ' + MOCK.money(q.residual_minor) + '）' : '',
+        };
+      });
+    }
+    return Promise.resolve({ amount: p.payable_minor, extra: '' });
+  }
+
+  function onPick(p) {
+    if (!available(p) || p.action === 'blocked') return;
+    if (p.action === 'login_required') { location.href = 'login.html'; return; }
+
+    amountOf(p).then(function (info) {
+      if (IS_STORE) return storePay(p, info);
+
+      // 网页轨道：可用的方式 = 本档允许的 ∩ 这个用户白名单里的
+      return MOCK.paymentMethods().then(function (mine) {
+        var usable = mine.filter(function (m) { return p.payment_methods.indexOf(m.id) >= 0; });
+        if (!usable.length) {
+          return UI.confirm({
+            title: p.name,
+            message: '当前账号没有可用的支付方式',
+            ok: '知道了',
+          });
+        }
+        var picked = usable.length === 1
+          ? Promise.resolve(usable[0])
+          : UI.confirm({ title: '选择支付方式', options: usable })
+              .then(function (id) { return mine.filter(function (m) { return m.id === id; })[0]; });
+
+        return picked.then(function (m) {
+          if (!m) return;   // 取消
+          return UI.confirm({
+            title: p.name,
+            message: m.label + ' · 应付 ' + MOCK.money(info.amount) + info.extra,
+            ok: '去支付',
+          }).then(function (yes) { if (yes) MOCK.purchase(p.plan_id); });
+        });
+      });
+    });
+  }
+
+  function storePay(p, info) {
+    return UI.confirm({
+      title: p.name,
+      message: STORE_NAME + ' · 应付 ' + MOCK.money(info.amount) + info.extra,
+      ok: '去支付',
+    }).then(function (yes) { if (yes) MOCK.purchase(p.plan_id); });
+  }
+
+  /* ── 启动 ─────────────────────────────────────────────────── */
+
+  paintNote();
+  MOCK.plans().then(function (list) {
+    $('cards').innerHTML = list.map(cardHtml).join('');
+    $('cards').querySelectorAll('[data-plan]').forEach(function (b) {
+      b.onclick = function () {
+        var p = list.filter(function (x) { return x.plan_id === b.getAttribute('data-plan'); })[0];
+        onPick(p);
+      };
+    });
+  });
+
+  $('foot').textContent = IS_STORE
+    ? '当前壳上报 store=' + STORE_KEY + '：不出现任何网页支付入口（Apple / Google 规则）。原型里点购买会直接开通。'
+    : '原型里点购买会跳过收银台直接开通，用于预览连接态。';
+})();
+</script>
+</body>
+</html>

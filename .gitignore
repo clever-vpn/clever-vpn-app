@@ -13,6 +13,7 @@ blob-report/
 
 # 构建期由 app.json 生成，不入库
 web/_brand.js
+web/_brand-logo.*
 
 # 闭源核心二进制（由 kit/fetch-kit.sh 下载）
 kit/*.aar
