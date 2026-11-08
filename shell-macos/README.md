@@ -20,7 +20,8 @@ SwiftUI（窗口/托盘）  ──WKScriptMessageHandler──▶  WKWebView（d
 | 托盘 | 菜单栏常驻 + 菜单项 |
 | 隧道 | NetworkExtension **system extension**（macOS 10.15+，非商店分发需用户批准）|
 | App ↔ 扩展 | `sendProviderMessage`（控制）；扩展 → App **无推送** ⇒ 用 App Group + Darwin 通知 |
-| bridge | `WKScriptMessageHandler` ↔ `evaluateJavaScript`（主线程），3 个方法白名单 |
+| bridge | `WKScriptMessageHandler` ↔ `evaluateJavaScript`（主线程），方法白名单 4 个（`connect` / `disconnect` / `state` / `open`）|
+| 外链 | `WKNavigationDelegate.decidePolicyFor`：非内置资源一律取消导航 → `NSWorkspace.shared.open`。WebView 自己永不离开 `dist/web` |
 | 分发 | DMG（Developer ID 签名 + 公证）|
 
 ## 注意事项

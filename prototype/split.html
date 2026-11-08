@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>分流规则</title>
+<link rel="stylesheet" href="app.css">
+<script src="brand.js"></script>
+<script>document.title = window.BRAND.name + ' · 分流规则';</script>
+<script src="mock.js"></script>
+<script>MOCK.requireLogin();</script>
+</head>
+<body data-allow>
+<div class="page">
+
+  <header class="topbar">
+    <a class="nav-btn" href="settings.html" aria-label="返回">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12 15 19.5"/></svg>
+    </a>
+    <h1>分流规则</h1>
+  </header>
+
+  <p class="note" style="margin-top:8px">开启后，列表里的目标走代理，其余直连。</p>
+
+  <!-- ① 区域 -->
+  <div class="sec">区域</div>
+  <div class="list">
+    <div class="row">
+      <span class="grow">按地区分流</span>
+      <button class="switch" id="swRegion" role="switch" aria-checked="true" aria-label="按地区分流"></button>
+    </div>
+    <a class="row" href="region.html" id="rowRegion">
+      <span class="grow">地区</span><span class="val" id="vRegion"></span><span class="chev">›</span>
+    </a>
+  </div>
+
+  <!-- ② IP -->
+  <div class="sec">IP</div>
+  <div class="list">
+    <div class="row">
+      <span class="grow">按 IP 分流</span>
+      <button class="switch" id="swIp" role="switch" aria-checked="false" aria-label="按 IP 分流"></button>
+    </div>
+    <div class="cell">
+      <textarea class="ta" id="ipText" spellcheck="false"
+                placeholder="IP/CIDR，每行一个&#10;例如：192.168.1.0/24"></textarea>
+    </div>
+  </div>
+
+  <!-- ③ 域名 -->
+  <div class="sec">域名</div>
+  <div class="list">
+    <div class="row">
+      <span class="grow">按域名分流</span>
+      <button class="switch" id="swDomain" role="switch" aria-checked="false" aria-label="按域名分流"></button>
+    </div>
+    <div class="cell">
+      <textarea class="ta" id="domainText" spellcheck="false"
+                placeholder="域名或后缀，每行一个&#10;前缀 . 表示后缀，例如 .example.com"></textarea>
+    </div>
+    <button class="row" id="rowAdv">
+      <span class="grow">高级（正则）</span><span class="chev" id="chevAdv">›</span>
+    </button>
+    <div class="cell" id="advCell" hidden>
+      <textarea class="ta" id="regexText" spellcheck="false"
+                placeholder="正则，每行一个&#10;例如：^.*\.example\.com$"></textarea>
+    </div>
+  </div>
+
+  <p class="note" style="margin-top:16px">改动即时生效并保存在本机。</p>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var ST = MOCK.SETTINGS, SP = ST.split, R = MOCK.REGIONS;
+
+  function save() { MOCK.saveSettings(); }
+
+  /* ── 开关 ── */
+  function bindSwitch(el, obj, onChange) {
+    el.setAttribute('aria-checked', String(!!obj.on));
+    el.onclick = function () {
+      obj.on = !obj.on;
+      el.setAttribute('aria-checked', String(obj.on));
+      save();
+      if (onChange) onChange();
+    };
+  }
+
+  /* ── 区域：开关 + 地区（四十多项，选择在独立的可搜索页 region.html）── */
+  function regionName(code) {
+    var r = R.filter(function (x) { return x.code === code; })[0];
+    return r ? r.name : code;
+  }
+  function paintRegion() {
+    $('vRegion').textContent = regionName(SP.region.code);
+    $('rowRegion').hidden = !SP.region.on;
+  }
+
+  /* ── IP / 域名 / 正则 ── */
+  function bindText(el, obj, after) {
+    el.value = obj.text || '';
+    el.disabled = !obj.on;
+    el.oninput = function () { obj.text = el.value; save(); if (after) after(); };
+  }
+  bindSwitch($('swRegion'), SP.region, paintRegion);
+  bindSwitch($('swIp'), SP.ip, function () { $('ipText').disabled = !SP.ip.on; });
+  bindSwitch($('swDomain'), SP.domain, function () {
+    $('domainText').disabled = !SP.domain.on;
+    // 正则是域名规则的子项：域名关就一起关
+    $('regexText').disabled = !SP.domain.on;
+  });
+  bindText($('ipText'), SP.ip);
+  bindText($('domainText'), SP.domain);
+  // 正则没有自己的开关，跟着「按域名分流」走
+  $('regexText').value = SP.regex.text || '';
+  $('regexText').disabled = !SP.domain.on;
+  $('regexText').oninput = function () { SP.regex.text = $('regexText').value; save(); };
+
+  /* ── 高级：折叠 ── */
+  function paintAdv() {
+    $('advCell').hidden = !SP.advanced;
+    $('chevAdv').style.transform = SP.advanced ? 'rotate(90deg)' : '';
+  }
+  $('rowAdv').onclick = function () {
+    SP.advanced = !SP.advanced;
+    save();
+    paintAdv();
+  };
+
+  paintRegion();
+  paintAdv();
+})();
+</script>
+</body>
+</html>

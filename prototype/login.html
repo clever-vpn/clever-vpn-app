@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>登录</title>
+<link rel="stylesheet" href="app.css">
+<script src="brand.js"></script>
+<script>document.title = window.BRAND.name;</script>
+<script src="mock.js"></script>
+<script>MOCK.allowAnon();</script>
+<script>if (MOCK.S.session) location.replace('index.html');</script>
+</head>
+<body class="no-tabs">
+<div class="page login-page">
+
+  <header class="login-head">
+    <span class="login-logo" data-brand-logo></span>
+    <h1 id="loginTitle">登录</h1>
+    <!-- 只留"这里填什么"。不解释机制、不提密码、不讲注册 —— 用户是来用 VPN 的。
+         第二步的"已发送至 …"是状态反馈（刚才发生了什么），不是说明，保留一行。 -->
+    <p class="login-sent" id="loginSent" hidden>已发送至 <b id="sentEmail"></b></p>
+  </header>
+
+  <!-- 第 1 步：邮箱 -->
+  <section id="step1">
+    <label class="field-label" for="email">邮箱</label>
+    <input class="input" id="email" type="email" inputmode="email" autocomplete="email"
+           autocapitalize="off" spellcheck="false" placeholder="example@email.com">
+
+    <!-- 邀请码：**只能在建号那一刻**绑定（app-crm 契约 §2.9.3），注册完就没法补，
+         所以入口必须留在第一步；但它永远不能是必填项 —— 默认收起，
+         不挡"填邮箱 → 收验证码"这条主路径。 -->
+    <div id="refBox" hidden>
+      <label class="field-label" for="referral">邀请码（选填）</label>
+      <input class="input" id="referral" autocapitalize="characters"
+             spellcheck="false" autocomplete="off" placeholder="FRIEND-A1B2">
+    </div>
+    <div class="login-links" id="refToggle" style="justify-content:flex-start;margin-top:2px">
+      <button class="link-btn" id="btnRef" type="button">有邀请码？</button>
+    </div>
+
+    <button class="btn primary" id="btnSend" style="margin-top:8px">发送验证码</button>
+  </section>
+
+  <!-- 第 2 步：验证码 -->
+  <section id="step2" hidden>
+    <label class="field-label" for="code">验证码</label>
+    <input class="input code" id="code" inputmode="numeric" autocomplete="one-time-code"
+           maxlength="6" placeholder="000000">
+    <button class="btn primary" id="btnVerify" style="margin-top:16px">登录</button>
+    <div class="login-links">
+      <button class="link-btn" id="btnResend" disabled>重新发送</button>
+      <span class="sep">·</span>
+      <button class="link-btn" id="btnChange">换个邮箱</button>
+    </div>
+  </section>
+
+  <!-- 条款属于“每页都在、但不参与操作”的东西：钉在底部边缘，
+       不挡在按钮和输入框之间（与欢迎页页脚一致）。 -->
+  <p class="note login-legal">
+    继续即表示同意
+    <a data-link="terms">服务条款</a> 与 <a data-link="privacy">隐私政策</a>
+  </p>
+
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var timer = null;
+
+  function startCountdown(sec) {
+    var left = sec;
+    var btn = $('btnResend');
+    btn.disabled = true;
+    btn.textContent = '重新发送（' + left + 's）';
+    clearInterval(timer);
+    timer = setInterval(function () {
+      left -= 1;
+      if (left <= 0) {
+        clearInterval(timer);
+        btn.disabled = false;
+        btn.textContent = '重新发送';
+      } else {
+        btn.textContent = '重新发送（' + left + 's）';
+      }
+    }, 1000);
+  }
+
+  $('btnSend').onclick = function () {
+    var email = $('email').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      $('email').focus();
+      $('email').style.outline = '2px solid var(--bad)';
+      return;
+    }
+    $('sentEmail').textContent = email;
+    $('loginSent').hidden = false;
+    $('loginTitle').textContent = '输入验证码';
+    $('step1').hidden = true;
+    $('step2').hidden = false;
+    $('code').value = '';
+    $('code').focus();
+    startCountdown(60);
+  };
+
+  $('btnResend').onclick = function () { startCountdown(60); };
+
+  /* 邀请码：点一下展开。展开后把入口按钮收掉 —— 留空就等于没用邀请码，
+     不需要再给一个"不用邀请码"的按钮（少一个可点的东西）。
+     不做必填、不做校验提示：码无效时 CRM 在 /auth/verify 里忽略它，不报错。 */
+  $('btnRef').onclick = function () {
+    $('refBox').hidden = false;
+    $('refToggle').hidden = true;
+    $('referral').focus();
+  };
+
+  // 邮箱写错了要能回头改 —— 否则用户只能杀进程
+  $('btnChange').onclick = function () {
+    clearInterval(timer);
+    $('btnResend').disabled = true;
+    $('btnResend').textContent = '重新发送';
+    $('loginTitle').textContent = '登录';
+    $('loginSent').hidden = true;
+    $('step2').hidden = true;
+    $('step1').hidden = false;
+    $('email').focus();
+    $('email').select();
+  };
+
+  $('btnVerify').onclick = function () {
+    if ($('code').value.replace(/\D/g, '').length !== 6) {
+      $('code').focus();
+      $('code').style.outline = '2px solid var(--bad)';
+      return;
+    }
+    // 原型：直接当作登录成功（生产：POST /auth/verify → session_token + platform_token）
+    MOCK.login($('referral').value);
+  };
+
+  $('email').value = MOCK.S.email;
+  $('email').oninput = function () { $('email').style.outline = ''; };
+  $('code').oninput = function () {
+    $('code').style.outline = '';
+    if ($('code').value.replace(/\D/g, '').length === 6) $('btnVerify').focus();
+  };
+})();
+</script>
+</body>
+</html>

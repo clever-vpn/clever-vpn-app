@@ -1,0 +1,611 @@
+/* ==========================================================================
+   App UI · 样板样式
+   --------------------------------------------------------------------------
+   第 1 段是**租户可改**的品牌变量（出厂值来自 app.json）。
+   第 2 段是**设计系统**（字号 / 间距 / 圆角 / 分隔线），租户不该改，改了就散。
+   改品牌只需要动第 1 段的 8 个值，其余不用碰。
+   ========================================================================== */
+
+:root {
+  /* ── ① 品牌（初级定制面：换这里就等于换品牌）────────────────── */
+  --brand: #2563eb;      /* 主色（填充用：按钮、选中态）。出厂来源 app.json.color */
+  --brand-text: var(--brand); /* 文字/链接用色；暗色下会单独调亮 */
+  --bg: #f2f3f5;         /* 页面底色 */
+  --surface: #ffffff;    /* 卡片 / 列表底 */
+  --text: #111827;       /* 主文字 */
+  --dim: #6b7280;        /* 次要文字 */
+  --radius: 12px;        /* 卡片圆角 */
+  --gap: 16px;           /* 页面左右边距 */
+  --maxw: 480px;         /* 内容最大宽度：桌面窗口拉宽时不再变扁 */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+    "Microsoft YaHei", system-ui, sans-serif;
+
+  /* ── ② 设计系统（固定；不要由租户配置）────────────────────── */
+  /* 字号阶梯：参考 Proton —— 层级用「字重 + 颜色」拉开，而不是靠巨大字号；
+     34px 那种 iOS 大标题在 VPN 这种工具类 App 里显得嗓门太大。*/
+  --fs-display: 30px;    /* 品牌名（只有欢迎页用） */
+  --fs-title: 26px;      /* 页面标题（仅认证页用；内容页用导航栏 --fs-nav） */
+  --fs-nav: 17px;        /* iOS 导航栏标题（居中、单行） */
+  --fs-h2: 18px;         /* 区块标题 / 主状态 */
+  --fs-body: 16px;       /* 正文 / 按钮 / 列表主文本 */
+  --fs-sub: 14px;        /* 次要说明 / 列表值 */
+  --fs-note: 13px;       /* 辅助、法律小字 */
+  --fs-tag: 11px;        /* 标签、徽标 */
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s6: 24px; --s8: 32px;
+  --r-s: 8px; --r-m: 12px; --r-l: 16px;
+  --h-control: 50px;     /* 主按钮 / 输入框 */
+  --h-row: 48px;         /* 列表行 */
+  --h-tab: 49px;         /* 底部分栏 */
+
+  --line: #e3e5e9;
+  --ok: #248a3d; --warn: #b25e00; --bad: #c9271b;
+  --fill: #f1f2f4;       /* 次级填充（胶囊、输入框）*/
+}
+
+/* 暗色：跟随系统；手动开关写 html[data-theme=dark] */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000; --surface: #1c1c1e; --text: #f2f2f7; --dim: #98989f;
+    --line: #38383a; --fill: #2c2c2e;
+    --ok: #30d158; --warn: #ff9f0a; --bad: #ff453a;
+    /* 暗色下故意调亮：同样的蓝在纯黑上当文字只有 3.1:1，不够读 */
+    --brand: #2f6feb; --brand-text: #7cb0ff;
+  }
+}
+html[data-theme="dark"] {
+  --bg: #000000; --surface: #1c1c1e; --text: #f2f2f7; --dim: #98989f;
+  --line: #38383a; --fill: #2c2c2e;
+  --ok: #30d158; --warn: #ff9f0a; --bad: #ff453a;
+  --brand: #2f6feb; --brand-text: #7cb0ff;
+}
+html[data-theme="light"] {
+  --bg: #f2f3f5; --surface: #ffffff; --text: #111827; --dim: #6b7280;
+  --line: #e3e5e9; --fill: #f1f2f4;
+  --ok: #248a3d; --warn: #b25e00; --bad: #c9271b;
+  --brand: #2563eb; --brand-text: #2563eb;
+}
+
+/* ── 基础 ─────────────────────────────────────────────────── */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* [hidden] 是 UA 样式，任何 display:flex 都会盖掉它 —— 统一钉住 */
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0 auto;
+  max-width: var(--maxw);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.3;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--h-tab) + env(safe-area-inset-bottom, 0px));
+}
+a { color: var(--brand-text); text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+
+.page { padding: 0 var(--gap); }
+
+/* 顶部：iOS 导航栏 —— 左返回 / 中标题 / 右动作，44pt 高，滚动时吸顶。
+   内容页不用大标题：大标题占两三行高度，而这类页面的信息密度不高。*/
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center; height: 44px;
+  margin: 0 calc(-1 * var(--gap)); padding: 0 var(--s2);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+/* 标题永远占中间那格：左/右按钮缺一个也不会偏 */
+.topbar h1 {
+  grid-column: 2; margin: 0;
+  font-size: var(--fs-nav); font-weight: 600; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nav-btn {
+  grid-column: 1; width: 44px; height: 44px;
+  display: grid; place-items: center; color: var(--brand-text);
+}
+.nav-btn.end { grid-column: 3; }
+/* 文字型动作（如"断开"）：同样占 44px 格，字号跟标题一致 */
+.nav-btn.txt { font-size: var(--fs-nav); font-weight: 400; white-space: nowrap; }
+.nav-btn svg {
+  width: 20px; height: 20px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.nav-btn:active { opacity: 0.5; }
+
+/* [hidden] 必须有 display:none 的效力：否则组件自己写的 display:grid / flex
+   会盖掉 UA 的 [hidden]，元素藏不住（典型：带 .nav-btn 的返回键） */
+[hidden] { display: none !important; }
+
+/* 品牌标记：内联 SVG，颜色跟随主色（亮色=主色，暗色=白）。
+   租户给了 BRAND.logo 时，brand.js 会换成 <img src=...>。 */
+.logo-mark { display: block; width: 100%; height: 100%; fill: currentColor; }
+[data-brand-logo] { color: var(--brand); }
+[data-brand-logo] img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+/* 以下三条只对「租户自带图」（BRAND.icon）生效：产品的旧图标是深名单色、透明底，
+   纯黑上几乎看不见 ⇒ 暗色下转白剪影。样板自带的标记是内联 SVG，颜色跟着
+   [data-brand-logo] 的 color 走，不需要 filter。*/
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) [data-brand-logo] img { filter: brightness(0) invert(1); }
+}
+html[data-theme="dark"] [data-brand-logo] img { filter: brightness(0) invert(1); }
+html[data-theme="light"] [data-brand-logo] img { filter: none; }
+
+/* 标记颜色：亮色跟随主色，暗色转白（用颜色而非 filter，彩色 logo 也能正确显示）*/
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) [data-brand-logo] { color: #fff; }
+}
+html[data-theme="dark"] [data-brand-logo] { color: #fff; }
+html[data-theme="light"] [data-brand-logo] { color: var(--brand); }
+
+/* 分组小标题（iOS grouped table / Nord 都用这个）*/
+.sec { margin: var(--s6) 0 var(--s2); padding-left: var(--s1);
+  font-size: var(--fs-note); font-weight: 600; color: var(--dim); }
+
+/* 区块标题 */
+h2 { margin: var(--s6) 0 var(--s2); font-size: var(--fs-h2); font-weight: 600; letter-spacing: -0.01em; }
+p { margin: 0 0 var(--s2); color: var(--dim); font-size: var(--fs-sub); }
+
+/* ── 卡片 / 列表 ──────────────────────────────────────────── */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--s4); }
+.card.tight { padding: 0; overflow: hidden; }
+
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.row {
+  display: flex; align-items: center; gap: var(--s3); width: 100%;
+  min-height: var(--h-row); padding: 0 var(--s4); text-align: left;
+  background: var(--surface); color: var(--text);
+}
+/* 分隔线从文字起点开始内缩（Apple 的做法），不是通栏 */
+.row + .row { border-top: 1px solid var(--line); background-clip: padding-box; }
+.row .grow { flex: 1 1 auto; min-width: 0; }
+.row .sub { color: var(--dim); font-size: var(--fs-note); }
+.row .val { color: var(--dim); font-size: var(--fs-sub); }
+.row .chev { color: var(--dim); font-size: var(--fs-sub); }
+/* 「关于」里的外链行：长得跟普通设置项一样，点开在系统浏览器里（bridge.open） */
+a.row { color: inherit; text-decoration: none; }
+a.row:active { background: var(--fill-2, rgba(0,0,0,.04)); }
+
+/* 卡片里的"非行"内容（多行输入等）*/
+.cell { padding: var(--s3) var(--s4); background: var(--surface); }
+.row + .cell, .cell + .row, .cell + .cell { border-top: 1px solid var(--line); }
+
+/* iOS 开关：51×31，绿色代表"开"（系统约定，不用主色）*/
+.switch {
+  position: relative; flex: none; width: 51px; height: 31px;
+  border-radius: 999px; background: var(--line); transition: background 0.2s;
+}
+.switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px;
+  border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s;
+}
+.switch[aria-checked='true'] { background: var(--ok); }
+.switch[aria-checked='true']::after { transform: translateX(20px); }
+
+/* 单选行（协议类型）：名称 + 说明 + 勾 */
+.opt {
+  display: flex; align-items: center; gap: var(--s3); width: 100%;
+  min-height: 56px; padding: var(--s2) var(--s4);
+  text-align: left; background: var(--surface); color: var(--text);
+}
+.opt + .opt { border-top: 1px solid var(--line); }
+.opt .grow { flex: 1 1 auto; min-width: 0; font-size: var(--fs-body); }
+.opt .ds { display: block; margin-top: 2px; font-size: var(--fs-note); color: var(--dim); }
+.opt .tick { flex: none; color: var(--brand-text); opacity: 0; }
+.opt .tick svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.opt[aria-checked='true'] .tick { opacity: 1; }
+/* 选中态 = 底色 + 加粗 + 勾，和列表行同一套（M11：只靠一个 18px 的勾太弱） */
+.opt[aria-checked='true'] { background: color-mix(in srgb, var(--brand) 11%, var(--surface)); }
+.opt[aria-checked='true'] .grow { font-weight: 500; }
+
+/* 多行输入（分流规则）*/
+.ta {
+  display: block; width: 100%; min-height: 84px; padding: 10px var(--s3);
+  border: 1px solid var(--line); border-radius: var(--r-s);
+  background: var(--fill); color: var(--text);
+  font: inherit; font-size: var(--fs-sub); line-height: 1.5;
+}
+.ta:disabled { opacity: 0.45; }
+.ta:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+/* 套餐卡：名称 + 活动角标 / 价格行 / 规格行（全部来自 GET /plans） */
+.plan-head { display: flex; align-items: center; gap: var(--s2); justify-content: space-between; }
+.plan-name { font-size: var(--fs-h2); font-weight: 600; }
+.plan-price { display: flex; align-items: baseline; gap: var(--s2); margin-top: 6px; }
+.plan-price b { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+.plan-price s { color: var(--dim); }
+.plan-spec { margin: 2px 0 0; font-size: var(--fs-note); color: var(--dim); }
+.card.plan { padding: var(--s4); }
+
+/* 选中行：底色 + 勾选双重区分。只靠一个勾，扫视列表时太弱 */
+.row[aria-checked="true"] { background: color-mix(in srgb, var(--brand) 11%, var(--surface)); }
+.row[aria-checked="true"] .grow { font-weight: 500; }
+
+/* 视觉隐藏但读屏可见（图标替代文字时补语义） */
+.vh {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* 行尾选中标记（单选语义）。注意：› 只留给"会打开新页面"的行 */
+.row .chk { flex: none; color: var(--brand-text); display: grid; place-items: center; }
+.row .chk svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* 功能型线路的图标：圆底 + 主色小图形（出口型用国家码文字）*/
+.mono.svc { background: color-mix(in srgb, var(--brand) 12%, transparent); color: var(--brand-text); }
+.mono.svc svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }
+/* 真机上这里是一张从 kit 取的 SVG（kit://line-icon/…），壳已把颜色统一成中性色 */
+.mono img { display: block; width: 18px; height: 18px; object-fit: contain; }
+
+.quick .mono { width: 22px; height: 22px; }
+.quick .mono svg { width: 13px; height: 13px; }
+.quick-name { font-weight: 500; }
+
+/* 国家/城市前的两字母圆标 */
+.mono {
+  width: 30px; height: 30px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  background: var(--fill); color: var(--dim);  font-size: var(--fs-tag); font-weight: 600; letter-spacing: 0.04em;
+}
+
+/* ── 按钮 ─────────────────────────────────────────────────── */
+.btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: var(--h-control); padding: 0 var(--s4);
+  border-radius: var(--r-m); font-size: var(--fs-body); font-weight: 600;
+  background: var(--fill); color: var(--text);
+}
+.btn.primary { background: var(--brand); color: #fff; }
+.btn.primary:disabled { opacity: 0.4; }
+.btn.plain { background: none; color: var(--brand-text); min-height: 44px; font-weight: 400; }
+.btn.danger { background: none; color: var(--bad); }
+.btn:active { opacity: 0.7; }
+
+/* 输入 */
+.input {
+  width: 100%; min-height: var(--h-control); padding: 0 var(--s4);
+  border-radius: var(--r-m); border: 1px solid var(--line); background: var(--surface);
+  color: var(--text); font-size: var(--fs-body);
+}
+.input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+/* ── 登录页 ───────────────────────────────────────────────── */
+/* 整页一列：内容在上，条款钉到底部边缘 */
+.login-page { min-height: 100dvh; display: flex; flex-direction: column; }
+.login-legal {
+  margin: auto 0 0; padding: var(--s6) 0 calc(var(--s6) + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+}
+/* 登录页：头部（标记 + 标题）居中，表单字段占满宽度、标签跟左边缘对齐。
+   垂直方向靠上（不用 100dvh 绝对居中）：键盘弹出时整块不会跳。*/
+.login-head { text-align: center; padding-top: clamp(32px, 18vh, 140px); }
+.login-logo { display: block; width: 104px; aspect-ratio: 1 / 1; margin: 0 auto; }
+.login-head h1 { margin: var(--s4) 0 0; font-size: var(--fs-title); font-weight: 600; letter-spacing: -0.015em; }
+/* 一行状态反馈（已发送至 …），不是说明文字 */
+.login-sent { margin: var(--s2) 0 0; font-size: var(--fs-note); color: var(--dim); }
+.login-sent b { color: var(--text); font-weight: 600; }
+/* 字段标签：告诉用户“这里填什么”，比任何说明句都短 */
+.field-label { display: block; margin: var(--s6) 0 var(--s2); font-size: var(--fs-note); color: var(--dim); }
+.login-links { display: flex; align-items: center; justify-content: center; gap: var(--s1); }
+.login-links .sep { color: var(--dim); font-size: var(--fs-note); }
+.link-btn {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s2);
+  color: var(--brand-text); font-size: var(--fs-note);
+}
+.link-btn:disabled { color: var(--dim); }
+
+/* 胶囊（筛选、状态） */
+.pills { display: flex; gap: var(--s2); overflow-x: auto; padding: var(--s2) 0; scrollbar-width: none; }
+.pills::-webkit-scrollbar { display: none; }
+.pill {
+  flex: none; height: 32px; padding: 0 var(--s3); border-radius: 999px;
+  background: var(--fill); color: var(--dim); font-size: var(--fs-note);
+  display: inline-flex; align-items: center;
+}
+.pill.on { background: var(--brand); color: #fff; }
+
+/* ── 提示条 ───────────────────────────────────────────────── */
+.alert {
+  display: flex; gap: var(--s3); align-items: flex-start;
+  padding: var(--s3) var(--s4); border-radius: var(--r-m);
+  background: var(--fill); color: var(--text); font-size: var(--fs-sub);
+}
+.alert + .alert { margin-top: var(--s2); }
+.alert.warn { background: rgba(255, 159, 10, 0.12); color: var(--warn); }
+.alert.bad { background: rgba(255, 59, 48, 0.12); color: var(--bad); }
+.alert .act { margin-left: auto; color: inherit; font-weight: 600; white-space: nowrap; }
+
+/* ── 主界面：大圆钮 ───────────────────────────────────────── */
+/* ── 大圆钮 ─────────────────────────────────────────────────────
+   状态只用三件事表达：底色、图标颜色、外圈那套"仪表"动效。
+   所有动效都是 transform / opacity，没有 JS 定时器 —— 锁屏、切后台回来也不会错位。
+   · 待机   静态细边（--fill）
+   · 连接中 一圈缺口弧快速旋转 + 心跳脉冲（动 = 还在建立）
+   · 已连接 环闭合、盘面静止，只在刚连上的一瞬放一圈确认波（静止 = 已完成）
+   规则很简单：**还在动 = 还没好；不再动 = 好了**。已连接绝不能持续转圈，
+   那是"仍在加载"的通用信号。 */
+.hero {
+  display: grid; place-items: center; gap: var(--s4);
+  padding: clamp(40px, 13vh, 120px) 0 var(--s4);
+}
+.pwr {
+  width: 168px; height: 168px; border-radius: 50%;
+  display: grid; place-items: center; position: relative;
+  background: var(--surface); border: 1px solid var(--line);
+  transition: transform 0.15s ease-out, background 0.25s ease-out,
+              border-color 0.25s ease-out, box-shadow 0.3s ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+.pwr:active { transform: scale(0.97); }
+.pwr .ring {
+  position: absolute; inset: 8px; border-radius: 50%;
+  border: 6px solid var(--fill); transition: border-color 0.25s ease-out;
+}
+.pwr .ico {
+  position: relative; z-index: 2; width: 46px; height: 46px;
+  color: var(--dim); transition: color 0.25s ease-out;
+}
+
+/* 三块装饰层：都在按钮外面或里面，不吃点击 */
+.pwr .sweep, .pwr .halo, .pwr .sheen {
+  position: absolute; border-radius: 50%; pointer-events: none;
+}
+.pwr .sweep, .pwr .halo { inset: -12px; opacity: 0; transition: opacity 0.3s ease-out; }
+/* 扫描弧：conic 渐变 + 径向 mask，只剩最外 3px，像仪表的指针划过 */
+.pwr .sweep::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    transparent 0 52%,
+    color-mix(in srgb, var(--brand) 42%, transparent) 84%,
+    var(--brand) 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+}
+/* 外扩脉冲：一圈细线往外散开，两层错开半个周期 */
+.pwr .halo::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--brand) 42%, transparent);
+}
+.pwr .halo.d2 { animation-delay: 1.4s; }
+/* 盘面光泽：静态的球面高光（左上亮一点），只做"材质"，不做"运动" */
+.pwr .sheen {
+  inset: 0; z-index: 1; opacity: 0; transition: opacity 0.4s ease-out;
+  background: radial-gradient(120% 120% at 28% 18%,
+    rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04) 42%, transparent 62%);
+}
+
+/* 连接中：快 */
+.pwr[data-s="connecting"] { border-color: color-mix(in srgb, var(--brand) 40%, var(--line)); }
+.pwr[data-s="connecting"] .ring { border-color: color-mix(in srgb, var(--brand) 26%, var(--fill)); }
+.pwr[data-s="connecting"] .ico { color: var(--brand); }
+.pwr[data-s="connecting"] .sweep { opacity: 1; animation: spin 0.95s linear infinite; }
+.pwr[data-s="connecting"] .halo { animation: beat 1.6s ease-out infinite; }
+
+/* 已连接：慢 */
+.pwr[data-s="connected"] {
+  background: var(--brand); border-color: var(--brand);
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--brand) 30%, transparent);
+}
+.pwr[data-s="connected"] .ring { border-color: rgba(255, 255, 255, 0.3); }
+.pwr[data-s="connected"] .ico { color: #fff; }
+.pwr[data-s="connected"] .sweep { opacity: 0; }        /* 环已经闭合，不再有"缺口" */
+.pwr[data-s="connected"] .sheen { opacity: 1; }
+/* 只在"刚连上"那一下放一圈确认波，放完就彻底静止：
+   持续转圈 = 还在进行中，这是所有人都懂的信号，已连接不能转 */
+.pwr[data-s="connected"] .halo { animation: burst 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
+.pwr[data-s="connected"] .halo.d2 { animation-delay: 0.18s; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes beat {
+  0% { transform: scale(0.97); opacity: 0.5; }
+  65%, 100% { transform: scale(1.05); opacity: 0; }
+}
+@keyframes burst {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(1.16); opacity: 0; }
+}
+/* 尊重系统"减少动态效果"：只保留静态状态，不转不闪 */
+@media (prefers-reduced-motion: reduce) {
+  .pwr .sweep, .pwr .halo, .pwr .sheen, .pwr .ring { animation: none !important; }
+}
+
+/* 状态一块：状态词居中，计时作为它的下一行也居中 ——
+   两者同一条垂直中轴，"已连接"仍然落在屏幕正中，不会被数字顶偏。
+   把计时塞进同一行（已连接 01:02:35）时，整组虽居中，但"已连接"这个词本身左移了，
+   观感就是对称被打破。 */
+.state-row { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.state-label { font-size: var(--fs-h2); font-weight: 600; line-height: 1.25; }
+/* 计时的"主语"就是上面的状态词，所以这里只给数值，不再重复任何文字 */
+.state-time {
+  color: var(--dim); font-size: var(--fs-sub); font-weight: 400;
+  font-variant-numeric: tabular-nums; line-height: 1.2;
+}
+
+/* 连接后的实时数字：箭头 + 数字一行一对（箭头指方向，不必再写"下行/上行"） */
+/* 流量行：三块（状态 / 流量 / 线路）之间要"看着"等距。
+   文字行自带上下各半的行距留白 + 数字下方还有一段字体降部，
+   框间距 16 看上去会是"上宽下窄"。所以：
+   · line-height 收成 1，让盒子贴合字形；
+   · 用 -4px 抵掉上面那行数字的降部空白。
+   改这一行前先量：上面 16~17px、下面 16px 才对得上。 */
+.stats {
+  display: flex; justify-content: center; gap: var(--s6);
+  line-height: 1; margin-top: -4px;
+}
+.stat { display: inline-flex; align-items: center; gap: var(--s1); }
+.stat .arrow {
+  width: 14px; height: 14px; flex: none;
+  fill: none; stroke: var(--dim); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.stat b { font-size: var(--fs-sub); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* 连接目标胶囊（Proton 的 “Fastest server” 那颗）*/
+.quick {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  height: 40px; padding: 0 var(--s4); border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line);
+  font-size: var(--fs-sub); color: var(--text);
+}
+.quick .mono { width: 22px; height: 22px; font-size: 9px; }
+.quick .chev { color: var(--dim); font-size: var(--fs-note); }
+
+/* ── 欢迎页：三段式（标记 / 名称+副标题 / 操作）─────────────────
+   三块靠剩余空间分开，屏幕再矮也至少留 var(--s6)；
+   标记高度取屏幕的 1/6（用 dvh，避开移动端 100vh 的地址栏问题）。*/
+body.no-tabs { padding-bottom: 0; }
+
+.welcome {
+  min-height: 100dvh;
+  display: flex; flex-direction: column; gap: var(--s6);
+  padding: calc(var(--s4) + env(safe-area-inset-top, 0px)) var(--gap)
+           calc(var(--s6) + env(safe-area-inset-bottom, 0px));
+}
+/* 顶条只放右上角帮助入口；没配 support 链接时整块消失（不留空按钮）*/
+.welcome-head { display: flex; justify-content: flex-end; align-items: center; min-height: 44px; }
+/* 热区 44×44，视觉圆只有 36 —— 手指尺寸和视觉尺寸不是一回事 */
+.help { width: 44px; height: 44px; display: grid; place-items: center; }
+.help span {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: var(--fs-sub); font-weight: 600; line-height: 1;
+  color: var(--dim); background: var(--fill);
+}
+.help:active span { opacity: 0.6; }
+
+/* 中段 + 操作区一起在剩余空间里垂直居中：
+   整体再往上提一点（padding-bottom）—— 手机上「开始使用」要落在拇指区，
+   不能让用户低头去找。*/
+.welcome-main {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding-bottom: 6vh;
+}
+.welcome-brand {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--s8); text-align: center;
+}
+.welcome-logo {
+  display: block;
+  width: min(calc(100vh / 6), 64vw);
+  width: min(calc(100dvh / 6), 64vw);
+  aspect-ratio: 1 / 1;
+}
+.welcome-name h1 { margin: 0; font-size: var(--fs-display); font-weight: 600; letter-spacing: -0.02em; }
+.welcome-name p {
+  margin: var(--s2) 0 0; max-width: 22em;
+  font-size: var(--fs-h2); line-height: 1.35; color: var(--dim);
+}
+/* 副标题没配就不要留一块空洞 */
+.welcome-name p:empty { display: none; }
+
+/* 操作区：跟在品牌块下面，靠留白分开；离页面底部保持距离（不要贴底）*/
+.welcome-actions { display: grid; gap: var(--s2); margin-top: var(--s8); }
+
+/* 矮屏（iPhone SE / 横屏手机）：留白压缩，宁可紧密也不出滚动条 */
+@media (max-height: 640px) {
+  .welcome-main { padding-bottom: 0; }
+  .welcome-brand { gap: var(--s4); }
+  .welcome-actions { margin-top: var(--s6); }
+}
+.welcome-foot { display: grid; gap: var(--s4); justify-items: center; text-align: center; }
+.welcome-foot .site {
+  display: flex; align-items: center; min-height: 44px; padding: 0 var(--s4);
+  color: var(--dim); font-size: var(--fs-note);
+}
+
+/* ── 底部导航 ─────────────────────────────────────────────── */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; max-width: var(--maxw); margin: 0 auto;
+  height: calc(var(--h-tab) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border-top: 1px solid var(--line);
+  backdrop-filter: saturate(180%) blur(12px);
+}
+.tab {
+  flex: 1 1 0; display: grid; place-items: center; gap: 2px; padding-top: 6px;
+  color: var(--dim); font-size: var(--fs-tag); text-decoration: none;
+}
+.tab svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.tab.on { color: var(--brand-text); }
+
+/* ── 调试条（只在原型里出现；移植时删掉这段和 mock.js 里对应代码）── */
+.devbar {
+  position: fixed; bottom: calc(var(--h-tab) + 12px + env(safe-area-inset-bottom, 0px));
+  right: 8px; z-index: 50; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+}
+.devbar .menu { display: none; flex-direction: column; align-items: flex-end; gap: 4px; }
+.devbar.open .menu { display: flex; }
+.devbar button {
+  height: 26px; padding: 0 8px; border-radius: 7px; font-size: 11px;
+  background: var(--surface); border: 1px solid var(--line); color: var(--dim);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.devbar button.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.devbar .toggle {
+  font-weight: 600; color: var(--text); width: 30px; height: 30px; padding: 0;
+  border-radius: 50%; opacity: .55;
+}
+.devbar.open .toggle { opacity: 1; }
+
+/* 验证码输入：单框等宽（比 6 个格子好实现对，粘贴也能用） */
+.code {
+  text-align: center; font-size: var(--fs-h2); letter-spacing: 0.5em;
+  font-variant-numeric: tabular-nums; text-indent: 0.5em;
+}
+
+/* 辅助小字 */
+.note { color: var(--dim); font-size: var(--fs-note); line-height: 1.45; }
+
+/* 大屏：两栏（>600px）。原型里暂时不启用，留结构 */
+@media (min-width: 600px) {
+  body { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+}
+
+/* ==========================================================================
+   确认弹窗（iOS alert 版式）——只需要"必须点头"的少数动作
+   取消在左、动作在右；动作文字用主色，只有真破坏性动作才改红
+   ========================================================================== */
+.sheet-host { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; }
+.sheet-mask { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.34); animation: mask-in 0.18s ease; }
+.sheet {
+  position: relative; width: min(300px, 76vw); overflow: hidden;
+  border-radius: 14px; text-align: center;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
+  animation: sheet-in 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.sheet-body { padding: 20px 20px 16px; }
+.sheet-body h2 { margin: 0 0 4px; font-size: var(--fs-nav); font-weight: 600; color: var(--text); }
+.sheet-body p { margin: 0; font-size: var(--fs-note); line-height: 1.45; color: var(--dim); }
+.sheet-acts { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
+.sheet-btn {
+  height: 44px; font: inherit; font-size: var(--fs-body); color: var(--brand-text);
+  background: none;
+}
+.sheet-btn + .sheet-btn { border-left: 1px solid var(--line); }
+.sheet-btn.ok { font-weight: 600; }
+.sheet-btn:active { background: color-mix(in srgb, var(--brand) 10%, transparent); }
+/* 选项模式：每个选项一行 + 分隔线，取消在下面单独一行 */
+.sheet-opts { border-top: 1px solid var(--line); }
+.sheet-opts[hidden] { display: none; }
+.sheet-opt { width: 100%; height: 48px; border-top: 1px solid var(--line); }
+.sheet-opt:first-child { border-top: 0; font-weight: 600; }
+
+.sheet:focus { outline: none; }
+.sheet-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: -4px; }
+
+@keyframes mask-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheet-in { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .sheet-mask, .sheet { animation: none; }
+}

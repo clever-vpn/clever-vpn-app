@@ -19,7 +19,8 @@ Android 薄壳：**Kotlin + VpnService**。
 | 隧道 | `VpnService` + 前台服务（通知栏常驻）|
 | 权限 | 首次连接请求 `VpnService.prepare` 授权 |
 | 核心 | `android-kit.aar`（`kit/fetch-kit.sh` 获取）|
-| bridge | `WebViewCompat.addWebMessageListener`（若启用 WebView）或 Compose 直接调用 |
+| bridge | `WebViewCompat.addWebMessageListener`（若启用 WebView）或 Compose 直接调用；方法白名单 4 个（`connect` / `disconnect` / `state` / `open`）|
+| 外链 | `shouldOverrideUrlLoading` 拦下非内置资源 → `Intent.ACTION_VIEW` 交浏览器；支付页同理（不要在 WebView 里加载）|
 | 打包 | `apk`（直发）/ `aab`（商店）|
 
 ## 选型留白

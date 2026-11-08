@@ -1,7 +1,10 @@
 {
   "name": "Next VPN",
   "short_name": "NextVPN",
+  "tagline": "Fast, private, everywhere.",
   "color": "#3b82f6",
+  "icon": "assets/icon.png",
+  "logo": "",
   "crm": {
     "base": "",
     "id": ""
@@ -9,6 +12,7 @@
   "links": {
     "terms": "",
     "privacy": "",
-    "support": ""
+    "support": "",
+    "website": ""
   }
 }

@@ -158,8 +158,8 @@ const ERROR_COPY = {
   INTERNAL:     { k:'bad',  title:'连接失败', body:'请重试；持续失败请联系客服。' },
 };
 
-/* ══ 壳的契约：3 个方法 + 1 个事件（浏览器里用 mock） ══ */
-const createMock = ()=>{
+/* ══ 壳的契约：4 个方法 + 1 个事件（浏览器里用 mock） ══ */
+const createMock = () => {
   const listeners = [];
   const s = { status:'disconnected', since:null, serverName:null, error:null };
   const fire = ()=>{ listeners.slice().forEach(fn=>{ try{ fn({ ...s }); }catch(e){} }); };
@@ -170,9 +170,26 @@ const createMock = ()=>{
     async disconnect(){ s.status='disconnected'; s.since=null; fire(); },
     async state(){ return { ...s, serverName:selected.name }; },
     on(cb){ listeners.push(cb); },
+    /* 浏览器里 = 侧载/网页环境：没有商店，所以走网页收银台 */
+    async capabilities(){ return { store:null, platform:'web', version:'2' }; },
   };
 };
 const BRIDGE = window.__BRIDGE__ || createMock();
+
+/* ══ 壳的能力：这个 App 是从哪个商店装进来的（bridge@2）══
+   store=null ⇒ 用 plans[].payment_methods（网页收银台）
+   'apple' / 'google' ⇒ 用 plans[].store_product_id[store]（商店内购）
+
+   只读不猜：不要用 UA / 安装包文件名 / CRM 里的标记替代它。判错在 iOS 上是
+   审核拒稿（反引导），在 Android 上是用户点不出去。取不到就按 null 处理。*/
+const CAP = { store: null, platform: 'web' };
+async function loadCapabilities(){
+  try{
+    const c = typeof BRIDGE.capabilities === 'function' ? await BRIDGE.capabilities() : null;
+    if (c) { CAP.store = c.store ?? null; CAP.platform = c.platform ?? CAP.platform; }
+  }catch(e){ /* 失败按 null：宁可给侧载用户网页支付，也不让商店用户看到外链 */ }
+  return CAP;
+}
 
 /* 界面自己的状态：只由 state() 与事件更新。
    不要读壳的内部字段（真壳里没有），否则一上真机就只剩“已断开”。 */
@@ -196,6 +213,12 @@ function applySnapshot(s){
 
 /* 事件只是“通知”，真相以 state() 为准 */
 BRIDGE.on(()=>{ BRIDGE.state().then(applySnapshot, ()=>{}); });
+
+/* 启动顺序：先问能力（决定「买在哪付」），再取状态。
+   购买入口必须在 loadCapabilities() 落地之后再渲染 —— 否则商店用户会先看到网页支付。*/
+const PAY = { rail: 'web' };   // 'web' | 'store'，只由 CAP.store 决定
+loadCapabilities().then(()=>{ PAY.rail = CAP.store ? 'store' : 'web'; });
+/* 租户在这之后渲染套餐/购买按钮；rail 只有一个来源：CAP.store。*/
 
 /* ══ 以下全是租户可改的界面逻辑 ══ */
 const SERVERS=[

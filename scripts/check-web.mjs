@@ -27,7 +27,7 @@ const CONTRACT = 2; // studio-app.md 的 studio_contract 版本
 const LIMITS = { fileBytes: 1_000_000, totalBytes: 8_000_000, files: 200, depth: 3 };
 
 /** bridge@1 白名单 */
-const BRIDGE_METHODS = new Set(['connect', 'disconnect', 'state', 'on']);
+const BRIDGE_METHODS = new Set(['connect', 'disconnect', 'state', 'on', 'open']);
 const ERROR_CODES = ['EXPIRED', 'FROZEN', 'DEVICE_LIMIT', 'NETWORK', 'INTERNAL'];
 /** FROZEN 必须中性文案（bridge@1 §3） */
 const FROZEN_BANNED = /违规|封禁|作弊|滥用|违反/;

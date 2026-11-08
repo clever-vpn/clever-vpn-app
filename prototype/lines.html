@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>线路</title>
+<link rel="stylesheet" href="app.css">
+<script src="brand.js"></script>
+<script>document.title = window.BRAND.name + ' · 线路';</script>
+<script src="mock.js"></script>
+<script src="ui.js"></script>
+<script>MOCK.requireLogin();</script>
+</head>
+<body>
+<div class="page">
+
+  <!-- 根页面（底部 tab 之一）：没有"返回上一级"，切页只走底部导航 -->
+  <header class="topbar">
+    <h1>线路</h1>
+    <button class="nav-btn end txt" id="dc" type="button" hidden>断开</button>
+  </header>
+
+  <input class="input" id="q" type="search" placeholder="搜索线路" autocomplete="off">
+
+  <div class="list" id="list" role="radiogroup" aria-label="线路" style="margin-top:12px"></div>
+
+  <p class="note" id="note" style="margin-top:16px" aria-live="polite">x3 表示按 3 倍流量计费。</p>
+
+</div>
+<nav data-tabs="lines"></nav>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var S = MOCK.S;
+  var connState = 'disconnected';   // disconnected / connecting / connected
+
+  /* 线路列表：平铺，不分组、不筛选。
+     服务端只有一个扁平列表（cf-api /api/key-lines），没有“出口/功能”这种分类；
+     名字是租户起的（如“TikTok 专用”），告诉用户“选它就能干这件事”。
+     用户需要知道的属性只有一个：流量系数 xN。
+     **选中不跳转**：这一页就是一个选择列表，选完留在原处，左上角返回 = 确认离开。
+     行尾用勾选标记（单选高），**不用 ›** —— › 的意思是“打开新内容”，这里不会下钻。
+
+     **已连接时不能切换**：线路是连接的参数，不是连接的属性。bridge@1 没有“换线”
+     这种原子操作，所谓切换只能是“断开 + 重连”两步，中间有一段断网，还可能失败
+     （设备超限 / 网络异常）。让它在背后悄悄发生，用户会以为只是浏览了一下列表，
+     连接就没了。所以这里把其余线路锁住，并给出两个出口：顶栏「断开」和首页大圆钮。 */
+  var CHECK = '<span class="chk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4 10-10"/></svg></span>';
+  var NOTE = {
+    disconnected: 'x3 表示按 3 倍流量计费。',
+    connecting: '连接中…',
+    connected: '已连接，切换需确认。',
+  };
+
+  function lineById(id) {
+    return MOCK.lines().filter(function (l) { return l.id === id; })[0];
+  }
+
+  function rowHtml(line) {
+    var on = line.id === MOCK.currentLine().id;
+    return (
+      '<button class="row" data-pick="' + line.id + '" role="radio" aria-checked="' + on + '">' +
+      MOCK.lineIcon(line) +
+      '<span class="grow">' + line.label + '</span>' +
+      '<span class="val" title="流量系数">' + MOCK.lineFactor(line) + '</span>' +
+      (on ? CHECK : '') +
+      '</button>'
+    );
+  }
+
+  function render() {
+    var q = $('q').value.trim().toLowerCase();
+    var lines = MOCK.lines().filter(function (l) {
+      if (!q) return true;
+      return l.label.toLowerCase().indexOf(q) >= 0;
+    });
+
+    $('list').innerHTML = lines.length
+      ? lines.map(rowHtml).join('')
+      : '<p class="note" style="margin-top:24px">没有匹配的线路</p>';
+
+    $('list').querySelectorAll('[data-pick]').forEach(function (b) {
+      b.onclick = function () {
+        if (S.locked) { location.href = 'plans.html'; return; }
+        var id = Number(b.getAttribute('data-pick'));
+        if (id === MOCK.currentLine().id) return;
+        if (connState === 'disconnected') { MOCK.setLine(id); render(); return; }  // 随手切
+        if (connState === 'connecting') return;   // 正在连：忽略点击，别让用户打断半截状态
+
+        // 已连接：换线路 = 断开 + 重连，让用户先点头再断
+        UI.confirm({
+          title: '切换到 ' + lineById(id).label,
+          message: '当前连接会断开。',
+          ok: '切换',
+        }).then(function (yes) {
+          if (!yes) return;
+          window.bridge.disconnect().then(function () {
+            MOCK.setLine(id);
+            setState('disconnected');         // 就地生效，不跳页
+          });
+        });
+      };
+    });
+  }
+
+  function setState(status) {
+    connState =
+      status === 'connected' ? 'connected' :
+      status === 'connecting' ? 'connecting' : 'disconnected';
+    // 「断开」在连接中也出现：那是唯一合法的"取消"，不算切换
+    $('dc').hidden = connState === 'disconnected';
+    $('note').textContent = NOTE[connState];
+    render();
+  }
+
+  $('dc').onclick = function () {
+    window.bridge.disconnect().then(function (s) { setState(s.status); });
+  };
+
+  window.bridge.on('state', function (s) { setState(s.status); });
+
+  $('q').oninput = render;
+  render();
+  window.bridge.state().then(function (s) { setState(s.status); });
+})();
+</script>
+</body>
+</html>
