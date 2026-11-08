@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * web/ 契约校验 —— 实现 docs/contracts/studio-app.md §2 的静态约束。
+ * web/ 契约校验 —— 实现 docs/contracts/app-studio-app.md §2 的静态约束。
  *
  * 用法：
  *   node scripts/check-web.mjs                  # 只看结果

@@ -114,7 +114,7 @@ node scripts/build.mjs --check
 node scripts/check-web.mjs        # 退出码非 0 = 有违规，逐条给出 file:line
 ```
 
-CI 里是 `web-contract` job。规则来自 `clever-vpn-docs` 的 `docs/contracts/studio-app.md`：
+CI 里是 `web-contract` job。规则来自 `clever-vpn-docs` 的 `docs/contracts/app-studio-app.md`：
 
 | 检查 ID | 规则 |
 |---|---|
