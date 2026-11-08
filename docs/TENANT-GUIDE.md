@@ -121,7 +121,7 @@ node scripts/check-web.mjs        # 逐条打印，退出码非 0 = 有违规
 ```
 
 CI 的 `validate` 与 `web-contract` 两个 job 必须全绿才能合并。规则来自
-`clever-vpn-docs` 仓库的 `docs/contracts/studio-app.md`，要点：
+`clever-vpn-docs` 仓库的 `docs/contracts/app-studio-app.md`，要点：
 
 | 检查 ID | 规则 |
 |---|---|
