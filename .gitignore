@@ -29,3 +29,6 @@ shell-macos/DerivedData/
 shell-android/build/
 shell-android/.gradle/
 shell-android/local.properties
+
+# 构建期产物（由 app.json 的 logo/icon 生成）
+web/_brand-logo.*
