@@ -82,7 +82,7 @@ vi web/index.html
 | `crm.base` | ✗ | 你的 CRM 地址（`https://`，无尾斜杠）；**留空 = 不提供登录/购买入口** ⬜ 待实现 |
 | `crm.id` | ✗ | 从 CRM 后台复制的实例标识（UUID），用于出包前校验地址对不对 ⬜ 待实现 |
 
-> 字段语义以 `clever-vpn-docs` 的 `docs/contracts/app-json.md` 为准；本表只是操作索引。
+> 字段语义以 `clever-vpn-docs` 的 `docs/contracts/shared/app-json.md` 为准；本表只是操作索引。
 > **白名单**：`app.json` 不接受上表之外的任何字段，写错会直接构建失败。
 
 ### 不在 `app.json` 里的东西
@@ -121,7 +121,7 @@ node scripts/check-web.mjs        # 逐条打印，退出码非 0 = 有违规
 ```
 
 CI 的 `validate` 与 `web-contract` 两个 job 必须全绿才能合并。规则来自
-`clever-vpn-docs` 仓库的 `docs/contracts/app-studio-app.md`，要点：
+`clever-vpn-docs` 仓库的 `docs/contracts/shared/app-studio-app.md`，要点：
 
 | 检查 ID | 规则 |
 |---|---|
