@@ -54,7 +54,7 @@ const CRM_KEYS = new Set(['base', 'id']);
 const LINK_KEYS = new Set(['terms', 'privacy', 'support']);
 for (const k of Object.keys(app)) {
   if (!APP_KEYS.has(k)) {
-    errors.push(`app.json 不接受字段 "${k}"（包名放 app.lock.json，核心版本放 kit/kit.version，外观/业务入口见 docs/contracts/app-json.md）`);
+    errors.push(`app.json 不接受字段 "${k}"（包名放 app.lock.json，核心版本放 kit/kit.version，外观/业务入口见 clever-vpn-docs 的 app-json 契约）`);
   }
 }
 for (const [obj, keys, label] of [[app.crm, CRM_KEYS, 'crm'], [app.links, LINK_KEYS, 'links']]) {
