@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>分流规则</title>
+<link rel="stylesheet" href="app.css">
+<script src="_brand.js"></script>
+<script src="icons.js"></script>
+<script src="bridge.js"></script>
+<script src="api.js"></script>
+<script src="ui.js"></script>
+</head>
+<body data-auth="in" data-studio-id="split">
+<div class="page">
+
+  <header class="topbar">
+    <a class="nav-btn" href="settings.html" aria-label="返回" data-studio-id="split.back">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12 15 19.5"/></svg>
+    </a>
+    <h1>分流规则</h1>
+  </header>
+
+  <p class="note" style="margin-top:8px">开启后，列表里的目标走代理，其余直连。改动即时生效并保存在本机。</p>
+
+  <div class="sec">区域</div>
+  <div class="list" data-studio-id="split.region">
+    <div class="row" data-row-switch="region">
+      <span class="grow">按地区分流</span>
+      <button class="switch" id="swRegion" role="switch" aria-checked="false" aria-label="按地区分流"></button>
+    </div>
+    <a class="row" href="region.html" id="rowRegion">
+      <span class="grow">地区</span><span class="val" id="vRegion"></span><span class="chev">›</span>
+    </a>
+  </div>
+
+  <div class="sec">IP</div>
+  <div class="list" data-studio-id="split.ip">
+    <div class="row" data-row-switch="ip">
+      <span class="grow">按 IP 分流</span>
+      <button class="switch" id="swIp" role="switch" aria-checked="false" aria-label="按 IP 分流"></button>
+    </div>
+    <div class="cell">
+      <textarea class="ta" id="ipText" spellcheck="false"
+                placeholder="IP/CIDR，每行一个&#10;例如：192.168.1.0/24"></textarea>
+    </div>
+  </div>
+
+  <div class="sec">域名</div>
+  <div class="list" data-studio-id="split.domain">
+    <div class="row" data-row-switch="domain">
+      <span class="grow">按域名分流</span>
+      <button class="switch" id="swDomain" role="switch" aria-checked="false" aria-label="按域名分流"></button>
+    </div>
+    <div class="cell">
+      <textarea class="ta" id="domainText" spellcheck="false"
+                placeholder="域名，每行一个&#10;前缀 . 表示包含子域（例如 .example.com）"></textarea>
+    </div>
+    <button class="row" id="rowAdv" type="button">
+      <span class="grow">高级（正则）</span><span class="chev" id="chevAdv">›</span>
+    </button>
+    <div class="cell" id="advCell" hidden>
+      <textarea class="ta" id="regexText" spellcheck="false"
+                placeholder="正则，每行一个&#10;例如：^.*\.example\.com$"></textarea>
+    </div>
+  </div>
+
+  <p class="note" id="saveNote" style="margin-top:16px" aria-live="polite"></p>
+</div>
+
+<script>
+UI.page(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var split = null;
+  var saveTimer = null;
+  var advanced = false;
+
+  function lines(text) {
+    return String(text || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  function paint() {
+    $('swRegion').setAttribute('aria-checked', String(!!split.region.enable));
+    $('swIp').setAttribute('aria-checked', String(!!split.ip.enable));
+    $('swDomain').setAttribute('aria-checked', String(!!split.domain.enable));
+    $('vRegion').textContent = UI.regionName(split.region.code);
+    $('rowRegion').hidden = !split.region.enable;
+
+    $('ipText').value = split.ip.ip_cidr.join('\n');
+    $('ipText').disabled = !split.ip.enable;
+
+    var domains = split.domain.domain.slice();
+    split.domain.domain_suffix.forEach(function (s) { domains.push('.' + s); });
+    $('domainText').value = domains.join('\n');
+    $('domainText').disabled = !split.domain.enable;
+
+    $('regexText').value = split.domain.domain_regex.join('\n');
+    $('regexText').disabled = !split.domain.enable;
+
+    $('advCell').hidden = !advanced;
+    $('chevAdv').style.transform = advanced ? 'rotate(90deg)' : '';
+  }
+
+  function readInputs() {
+    split.ip.ip_cidr = lines($('ipText').value);
+    var dom = [];
+    var suffix = [];
+    lines($('domainText').value).forEach(function (s) {
+      if (s.charAt(0) === '.') suffix.push(s.replace(/^\.+/, ''));
+      else dom.push(s);
+    });
+    split.domain.domain = dom;
+    split.domain.domain_suffix = suffix;
+    split.domain.domain_regex = lines($('regexText').value);
+  }
+
+  function save(immediate) {
+    clearTimeout(saveTimer);
+    var run = async function () {
+      readInputs();
+      try {
+        await bridge.setSplit(split);
+        $('saveNote').textContent = '已保存';
+      } catch (e) {
+        $('saveNote').textContent = UI.errText(e, '保存失败，请稍后再试');
+      }
+    };
+    if (immediate) run();
+    else saveTimer = setTimeout(run, 400);
+  }
+
+  function bindSwitch(el, key) {
+    el.onclick = function () {
+      split[key].enable = !split[key].enable;
+      save(true);   // 先把当前输入读进 split，再重绘（否则刚输入的值会被 paint 冲掉）
+      paint();
+    };
+  }
+
+  bindSwitch($('swRegion'), 'region');
+  bindSwitch($('swIp'), 'ip');
+  bindSwitch($('swDomain'), 'domain');
+
+  // 整行都是热区（iOS 的做法）：开关本身只有 31px 高，手指点不到那么准
+  document.querySelectorAll('[data-row-switch]').forEach(function (row) {
+    row.addEventListener('click', function (e) {
+      if (e.target.closest('.switch')) return;
+      var sw = row.querySelector('.switch');
+      if (sw) sw.click();
+    });
+  });
+
+  ['ipText', 'domainText', 'regexText'].forEach(function (id) {
+    $(id).oninput = function () { save(false); };
+  });
+
+  $('rowAdv').onclick = function () {
+    advanced = !advanced;
+    try { localStorage.setItem('app.split.advanced', advanced ? '1' : '0'); } catch (e) { /* 忽略 */ }
+    paint();
+  };
+
+  (async function load() {
+    try { split = (await bridge.settings()).split; }
+    catch (e) {
+      split = { region: { enable: false, code: 'CN' }, ip: { enable: false, ip_cidr: [] }, domain: { enable: false, domain: [], domain_suffix: [], domain_regex: [] } };
+    }
+    try { advanced = localStorage.getItem('app.split.advanced') === '1'; } catch (e) { advanced = false; }
+    paint();
+  })();
+});
+</script>
+</body>
+</html>

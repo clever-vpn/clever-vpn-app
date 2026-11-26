@@ -1,6 +1,6 @@
 # shell-windows
 
-Windows 薄壳：**WinUI 3 + WebView2**，把 `dist/web` 全屏承载，并向页面注入 `bridge@1`。
+Windows 薄壳：**WinUI 3 + WebView2**，把 `dist/web` 全屏承载，并向页面注入 `bridge@2`（见 `docs/BRIDGE.md`）。
 
 ## 计划接入
 

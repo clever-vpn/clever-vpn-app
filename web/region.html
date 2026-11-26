@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>地区</title>
+<link rel="stylesheet" href="app.css">
+<script src="_brand.js"></script>
+<script src="icons.js"></script>
+<script src="bridge.js"></script>
+<script src="api.js"></script>
+<script src="ui.js"></script>
+</head>
+<body data-auth="in" data-studio-id="region">
+<div class="page">
+
+  <header class="topbar">
+    <a class="nav-btn" href="split.html" aria-label="返回" data-studio-id="region.back">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12 15 19.5"/></svg>
+    </a>
+    <h1>地区</h1>
+  </header>
+
+  <input class="input" id="q" type="search" placeholder="搜索国家和地区" autocomplete="off"
+         style="margin-top:12px" data-studio-id="region.search">
+
+  <div class="list" id="list" role="radiogroup" aria-label="地区" style="margin-top:12px" data-studio-id="region.list"></div>
+
+  <p class="note" id="note" style="margin-top:16px" aria-live="polite">选中即生效，左上角返回即可。</p>
+</div>
+
+<script>
+UI.page(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var split = null;
+
+  function render() {
+    if (!split) return;
+    var q = $('q').value.trim().toLowerCase();
+    var list = UI.regions.filter(function (r) {
+      return !q || r.name.toLowerCase().indexOf(q) >= 0 || r.code.toLowerCase().indexOf(q) >= 0;
+    });
+    if (!list.length) {
+      $('list').innerHTML = '<div class="empty"><b>没有匹配的国家或地区</b>换个关键词试试。</div>';
+      return;
+    }
+    $('list').innerHTML = list.map(function (r) {
+      var on = r.code === split.region.code;
+      return '<button class="row" data-r="' + r.code + '" role="radio" aria-checked="' + on + '">' +
+        '<span class="mono">' + r.code + '</span>' +
+        '<span class="grow">' + UI.esc(r.name) + '</span>' +
+        (on ? '<span class="chk"><svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS.check + '</svg></span>' : '') +
+        '</button>';
+    }).join('');
+    $('list').querySelectorAll('[data-r]').forEach(function (b) {
+      b.onclick = function () { choose(b.getAttribute('data-r')); };
+    });
+  }
+
+  async function choose(code) {
+    if (code === split.region.code) return;
+    split.region.code = code;
+    split.region.enable = true;
+    render();
+    try {
+      await bridge.setSplit(split);
+      $('note').textContent = '已选 ' + UI.regionName(code) + '，返回即可。';
+    } catch (e) {
+      $('note').textContent = UI.errText(e, '保存失败，请稍后再试');
+    }
+  }
+
+  $('q').oninput = render;
+
+  (async function load() {
+    try { split = (await bridge.settings()).split; }
+    catch (e) {
+      split = { region: { enable: false, code: 'CN' }, ip: { enable: false, ip_cidr: [] }, domain: { enable: false, domain: [], domain_suffix: [], domain_regex: [] } };
+    }
+    render();
+  })();
+});
+</script>
+</body>
+</html>

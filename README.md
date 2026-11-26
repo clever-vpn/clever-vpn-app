@@ -4,45 +4,82 @@
 
 给租户（VPN 服务商）用的**可品牌化客户端**：一份 Web UI，三个平台的薄外壳，核心逻辑在闭源 `kit` 里。
 
-- **本仓库开源**：外壳 + UI（租户 fork 后只改 `app.json`、`assets/icon.png` 和 `web/`）
+- **本仓库开源**：外壳 + UI。租户 fork 后一般只改 `app.json`、`assets/` 和 `web/`
 - **核心闭源**：`clever-vpn-*-kit`（Go），以预编译二进制分发，见 `kit/fetch-kit.sh`
 
 ## 结构
 
 ```
-app.json            这个 App 是什么：名称 / 主色 / CRM 入口 / 链接（租户改这里）
-assets/icon.png     图标源图：1024×1024 PNG、无 alpha、≤ 1MB
-web/                界面（纯 HTML/CSS/JS，租户改这里）
+app.json            这个 App 是什么：名称 / 副标题 / 主色 / 图标与标记 / CRM / 链接（租户改这里）
+assets/             图标源图（icon，1024×1024 PNG 无 alpha）与界面标记（logo，PNG/SVG）
+web/                界面：10 页 HTML + app.css + ui/api/bridge/icons.js（租户改这里）
+template.json       模板包元数据：包格式 / studio_contract / bridge / 上限（平台维护）
 app.lock.json       包名 + 血缘（机器生成，手改无效）
 kit/kit.version     闭源核心版本（平台维护）
 shell-windows/      WinUI 3 + WebView2
 shell-macos/        SwiftUI + WKWebView + NetworkExtension 系统扩展
 shell-android/      Kotlin + VpnService
 scripts/build.mjs   构建：校验 → 注入 window.BRAND → 生成 dist/
-docs/               架构、bridge 契约、租户指南
+scripts/lib/web-check.mjs  闸门纯函数（CI 与 Studio 共用同一份判决）
+scripts/check-web.mjs      闸门 CLI
+scripts/check-paths.mjs    分支前缀 ↔ 允许路径
+docs/               架构、bridge 契约、UI 原则、租户指南
 ```
 
 ## 租户三步
 
-1. 改 `app.json`（名称 / 主色 / CRM 地址）
-2. 换 `assets/icon.png`（1024×1024、无透明通道）
+1. 改 `app.json`（名称 / 副标题 / 主色 / CRM 地址 / 链接）
+2. 换 `assets/icon.png`（1024×1024、无透明通道），要单色标记就放 `assets/logo.svg`
 3. 改 `web/` 里的文字与配色（或者交给 `clever-vpn-app-studio` 用对话改）
 
 > 包名与核心版本**不在**你改的文件里：包名在 `app.lock.json`（机器生成），
 > 核心版本在 `kit/kit.version`（平台发布时更新）。
 > 不需要安装 Xcode / Android Studio / Visual Studio —— 构建在 GitHub Actions 上完成。
 
+## 十个页面
+
+| 文件 | 屏 |
+|---|---|
+| `web/welcome.html` | 欢迎（品牌标记 / 名称 / 副标题 / 开始使用） |
+| `web/login.html` | 邮箱验证码（发码 → 验证码 → 重发冷却 → 换邮箱） |
+| `web/index.html` | 连接主界面（大圆钮 / 状态 / 计时 / 流量 / 当前线路） |
+| `web/lines.html` | 线路（搜索 / 流量系数 / 选中即生效） |
+| `web/plans.html` | 套餐（服务端视图模型驱动 / 网页收银台） |
+| `web/account.html` | 账户（订阅 / 订单 / 退出） |
+| `web/settings.html` | 设置（协议 / 分流入口 / 连接信息 / 主题 / 关于） |
+| `web/split.html` | 分流（区域 / IP / 域名 / 正则） |
+| `web/region.html` | 地区（可搜索 + 选中即生效） |
+| `web/redeem.html` | 兑换 / 礼包 / 奖励卡 |
+
+多页是刻意的：一屏一文件、每屏不会长到 AI 改不动；代价是导航会重载，所以每屏都有骨架/稳定布局。
+
 ## Bridge 契约（壳与 UI 的唯一接口）
 
 ```js
-await bridge.connect(configJson)   // 启动隧道
-await bridge.disconnect()          // 停止隧道
-await bridge.state()               // 状态快照（页面刷新后必调）
+await bridge.activate(code)        // 激活（code 来自 /subscription，不展示）
+await bridge.lines()               // 线路列表
+await bridge.setLine(id)           // 选线路
+await bridge.connect()             // 连接（无参数：线路由 setLine 决定）
+await bridge.disconnect()
+const s = await bridge.state()     // 状态快照（页面刷新后必调）
 bridge.on('state', s => {})        // 状态变化事件
 ```
 
-> 登录 / 注册 / 计费**不走 bridge**，由 `web/` 直接请求租户自己的后端。
+`bridge@2` 共 13 个方法（含 `capabilities` / `settings` / `setProtocol` / `setSplit` / 可选的 `open`）。
+登录 / 注册 / 计费**不走 bridge**，由 `web/` 直接请求租户自己的 CRM（`clients` 契约）。
+
 > 详细定义见 [`docs/BRIDGE.md`](docs/BRIDGE.md)。
+
+## 门禁（PR 上四个 required check）
+
+| job | 跑什么 |
+|---|---|
+| `validate` | `node scripts/build.mjs --check`（app.json / 图标 / logo / app.lock.json / template.json） |
+| `web-contract` | `node scripts/check-web.mjs`（14 条静态约束，与 Studio 的 `check_draft` 同一份实现） |
+| `web-smoke` | Playwright：10 页 × 视口 × 主题截图、点击流、错误码、品牌替换、无 console error |
+| `path-whitelist` | 按分支前缀判允许路径（`studio/design|config|onboard/*`），越界即失败 |
+
+本地跑同一套：`npm ci && node scripts/build.mjs && node --test && npx playwright test`。
 
 ## 开发协作规则
 
@@ -51,7 +88,7 @@ bridge.on('state', s => {})        // 状态变化事件
   git config core.hooksPath .githooks
   ```
 - 提交信息用 Conventional Commits（中文描述），例如：
-  `feat(web): 节点列表支持延迟排序` / `fix(bridge): 连接超时重试`
+  `feat(web): 线路列表支持搜索` / `fix(bridge): 连接超时重试`
 - 发布走 Actions → `release`（`workflow_dispatch`）：先选 `platform`
   （`all` / `web` / `android` / `apple` / `windows`），`tag` 留空则自动 `patch+1`，统一 `v` 前缀。
   细节见 [`docs/RELEASE.md`](docs/RELEASE.md)。
@@ -61,8 +98,10 @@ bridge.on('state', s => {})        // 状态变化事件
 | 文档 | 内容 |
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 分层、为什么用 Web UI、壳如何隔离 |
-| [`docs/BRIDGE.md`](docs/BRIDGE.md) | bridge 方法、状态结构、错误码、安全约束 |
-| [`docs/TENANT-GUIDE.md`](docs/TENANT-GUIDE.md) | 租户改造清单（改哪些、别改哪些） |
+| [`docs/BRIDGE.md`](docs/BRIDGE.md) | `bridge@2` 方法、状态结构、错误码、安全约束 |
+| [`docs/UI-PRINCIPLES.md`](docs/UI-PRINCIPLES.md) | 界面原则（M1–M14）与产品级验收清单 |
+| [`docs/TENANT-GUIDE.md`](docs/TENANT-GUIDE.md) | 租户改造清单（改哪些、别改哪些、怎么验收） |
+| [`docs/UI-REFERENCE.md`](docs/UI-REFERENCE.md) | 竞品与平台实测（素材参考，不是规范） |
 | [`docs/RELEASE.md`](docs/RELEASE.md) | 出包：平台选择、各端构建入口契约、需要的 Secrets |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | 分支 / 提交 / 发布流程 |
 

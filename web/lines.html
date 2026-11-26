@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>线路</title>
+<link rel="stylesheet" href="app.css">
+<script src="_brand.js"></script>
+<script src="icons.js"></script>
+<script src="bridge.js"></script>
+<script src="api.js"></script>
+<script src="ui.js"></script>
+</head>
+<!-- tab 根页面：平铺列表 + 搜索；选中就地生效，行尾只用勾不用 ›。 -->
+<body data-auth="in" data-studio-id="lines">
+<div class="page">
+
+  <header class="topbar">
+    <h1>线路</h1>
+    <button class="nav-btn end txt" id="dc" type="button" hidden data-studio-id="lines.disconnect">断开</button>
+  </header>
+
+  <input class="input" id="q" type="search" placeholder="搜索线路" autocomplete="off"
+         style="margin-top:12px" data-studio-id="lines.search">
+
+  <div class="list" id="list" role="radiogroup" aria-label="线路" style="margin-top:12px" data-studio-id="lines.list"></div>
+
+  <p class="note" id="note" style="margin-top:16px" aria-live="polite">x3 表示按 3 倍流量计费。</p>
+</div>
+<nav data-tabs="lines"></nav>
+
+<script>
+UI.page(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var lines = [];
+  var state = null;
+  var loading = false;
+
+  function currentId() {
+    if (state && state.line) return state.line.id;
+    var saved = Number(localStorage.getItem('app.line')) || 0;
+    if (saved && lineById(saved)) return saved;
+    var def = lines.filter(function (l) { return l.isDefault; })[0];
+    return def ? def.id : (lines[0] ? lines[0].id : 0);
+  }
+
+  function lineById(id) { return lines.filter(function (l) { return l.id === id; })[0]; }
+
+  function paintNote() {
+    var st = state && state.status;
+    $('note').textContent = st === 'connected' ? '已连接，切换需确认。'
+      : st === 'connecting' ? '连接中…'
+        : 'x3 表示按 3 倍流量计费。';
+    $('dc').hidden = !(st === 'connected' || st === 'connecting');
+  }
+
+  function paintState(s) {
+    state = s;
+    paintNote();
+    render();
+  }
+
+  function emptyHtml(title, text, retry) {
+    return '<div class="empty"><b>' + UI.esc(title) + '</b>' + UI.esc(text) +
+      (retry ? '<div style="margin-top:16px"><button class="btn plain" id="retry" type="button">重试</button></div>' : '') +
+      '</div>';
+  }
+
+  function bindRetry() {
+    var b = document.getElementById('retry');
+    if (b) b.onclick = load;
+  }
+
+  function rowHtml(line, cur) {
+    var on = line.id === cur;
+    return '<button class="row" data-pick="' + line.id + '" role="radio" aria-checked="' + on + '">' +
+      UI.lineIcon(line) +
+      '<span class="grow">' + UI.esc(line.label) + '</span>' +
+      '<span class="val" title="流量系数">x' + (line.factor || 1) + '</span>' +
+      (on ? '<span class="chk"><svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS.check + '</svg></span>' : '') +
+      '</button>';
+  }
+
+  function render() {
+    if (loading) return;
+    var cur = currentId();
+    var q = $('q').value.trim().toLowerCase();
+    var list = lines.filter(function (l) { return !q || String(l.label).toLowerCase().indexOf(q) >= 0; });
+    if (!lines.length) {
+      $('list').innerHTML = emptyHtml('暂无可用线路', '稍后刷新，或联系客服。', true);
+      bindRetry();
+      return;
+    }
+    if (!list.length) {
+      $('list').innerHTML = emptyHtml('没有匹配的线路', '换个关键词试试。', false);
+      return;
+    }
+    $('list').innerHTML = list.map(function (l) { return rowHtml(l, cur); }).join('');
+    $('list').querySelectorAll('[data-pick]').forEach(function (b) {
+      b.onclick = function () { pick(Number(b.getAttribute('data-pick'))); };
+    });
+  }
+
+  async function setLine(id) {
+    try {
+      await bridge.setLine(id);
+      localStorage.setItem('app.line', String(id));
+      render();
+    } catch (e) {
+      UI.toast(UI.errText(e, '切换线路失败'), 'bad');
+    }
+  }
+
+  async function pick(id) {
+    if (id === currentId()) return;
+    var target = lineById(id);
+    if (!target) return;
+    var st = state || { status: 'disconnected' };
+    if (st.status === 'connecting') return;
+    if (st.status !== 'connected') { await setLine(id); return; }
+    var yes = await UI.confirm({ title: '切换到 ' + target.label, message: '当前连接会断开。', ok: '切换' });
+    if (!yes) return;
+    try {
+      await bridge.disconnect();
+      await setLine(id);
+    } catch (e) {
+      UI.toast(UI.errText(e, '切换失败'), 'bad');
+    }
+  }
+
+  async function load() {
+    loading = true;
+    $('list').innerHTML = '<div style="padding:16px"><div class="skeleton-row"></div>' +
+      '<div class="skeleton-row"></div><div class="skeleton-row"></div></div>';
+    try {
+      var res = await bridge.lines({ refresh: true });
+      lines = (res && res.lines) || [];
+      loading = false;
+      render();
+    } catch (e) {
+      loading = false;
+      lines = [];
+      $('list').innerHTML = emptyHtml('线路加载失败', UI.errText(e, '检查网络后重试。'), true);
+      bindRetry();
+    }
+  }
+
+  $('dc').onclick = async function () {
+    try { await bridge.disconnect(); } catch (e) { /* state() 才是真相 */ }
+  };
+
+  $('q').oninput = render;
+  bridge.on('state', paintState);
+  bridge.state().then(paintState).catch(function () { paintNote(); });
+  load();
+});
+</script>
+</body>
+</html>
