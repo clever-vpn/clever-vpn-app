@@ -32,7 +32,7 @@ export const BRAND_ALT = {
   short_name: 'Nord',
   tagline: '安静地穿过边界',
   color: '#0f9d58',
-  logo: '_brand-logo.png',
+  logo: '_brand-logo.svg',
   crm: { base: ORIGIN, id: '8f3a1c2e-1b2c-4d5e-8f90-123456789abc' },
   links: {
     terms: '',
