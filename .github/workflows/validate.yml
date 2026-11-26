@@ -1,4 +1,4 @@
-# PR 门禁：app.json + 图标 / web 静态契约 / web 行为冒烟
+# PR 门禁：app.json + 图标 / web 静态契约 / web 行为冒烟 / 路径白名单
 name: validate
 
 on:
@@ -22,8 +22,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - name: 校验 app.json / app.lock.json / assets/icon.png
+      - name: 校验 app.json / app.lock.json / template.json / 图标 / logo
         run: node scripts/build.mjs --check
+      - name: 闸门与构建脚本自检（纯函数 fixtures）
+        run: node --test "test/*.test.mjs"
 
   web-contract:
     name: web-contract
@@ -33,7 +35,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - name: 校验 web/ 契约
+      - name: 校验 web/ 契约（与 studio 的 check_draft 同一份实现）
         run: node scripts/check-web.mjs --report web-contract-report.json
       - name: 上传报告
         if: always()
@@ -43,6 +45,20 @@ jobs:
           path: web-contract-report.json
           if-no-files-found: warn
           retention-days: 14
+
+  path-whitelist:
+    name: path-whitelist
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: 按分支前缀校验允许路径
+        run: node scripts/check-paths.mjs --base "origin/${{ github.base_ref }}" --head HEAD
 
   web-smoke:
     name: web-smoke
@@ -55,7 +71,7 @@ jobs:
           cache: npm
       - name: 安装测试依赖
         run: npm ci
-      - name: 生成 web/_brand.js（构建产物，不入库）
+      - name: 生成 web/_brand.js 与品牌标记（构建产物，不入库）
         run: node scripts/build.mjs
       - uses: actions/cache@v4
         with:
@@ -63,7 +79,7 @@ jobs:
           key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: 安装 Chromium
         run: npx playwright install --with-deps chromium
-      - name: 行为冒烟（假壳 + 真实 Chromium）
+      - name: 行为冒烟（假壳 + 真实 Chromium，10 页 × 视口 × 主题 + 品牌替换）
         run: npx playwright test
       - name: 上传报告与截图
         if: always()

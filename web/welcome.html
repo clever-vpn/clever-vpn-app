@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>欢迎</title>
+<link rel="stylesheet" href="app.css">
+<script src="_brand.js"></script>
+<script src="icons.js"></script>
+<script src="bridge.js"></script>
+<script src="api.js"></script>
+<script src="ui.js"></script>
+</head>
+<!-- 欢迎页 = 供应商给用户的第一屏：① 标记 ② 名称 + 副标题 ③ 操作。
+     全部来自 app.json（name / tagline / logo / links），页面里没有写死一个品牌字。 -->
+<body data-auth="out" class="no-tabs" data-studio-id="welcome">
+<div class="welcome">
+
+  <div class="welcome-head">
+    <a class="help" data-link="support" target="_blank" rel="noopener"
+       aria-label="帮助与支持" title="帮助与支持"><span>?</span></a>
+  </div>
+
+  <div class="welcome-main">
+    <div class="welcome-brand" data-studio-id="welcome.brand">
+      <span class="welcome-logo" data-brand-logo data-studio-id="welcome.logo"></span>
+      <div class="welcome-name">
+        <h1 data-brand-name></h1>
+        <p data-brand-tagline></p>
+      </div>
+    </div>
+
+    <div class="welcome-actions" data-studio-id="welcome.actions">
+      <a class="btn primary" id="start" href="login.html">开始使用</a>
+      <a class="btn plain" id="viewPlans" href="plans.html">查看套餐价格</a>
+    </div>
+  </div>
+
+  <footer class="welcome-foot">
+    <a class="site" data-link="website" data-link-host target="_blank" rel="noopener"></a>
+    <p class="note" data-legal></p>
+  </footer>
+
+</div>
+
+<script>
+UI.page(function () {
+  // 没有 CRM 的品牌：隐藏登录/购买入口（clients §9 第 7 条），不留死按钮
+  if (!Api.available()) {
+    var start = document.getElementById('start');
+    start.removeAttribute('href');
+    start.classList.remove('primary');
+    start.classList.add('plain');
+    start.textContent = '当前版本未开通在线服务';
+    start.setAttribute('aria-disabled', 'true');
+    start.addEventListener('click', function (e) { e.preventDefault(); });
+    document.getElementById('viewPlans').remove();
+  }
+});
+</script>
+</body>
+</html>

@@ -4,8 +4,10 @@
   "description": "仅用于 CI 的端到端冒烟测试；构建与品牌注入仍是零依赖（scripts/*.mjs 只用 Node 内置模块）",
   "scripts": {
     "check": "node scripts/build.mjs --check && node scripts/check-web.mjs",
+    "check:paths": "node scripts/check-paths.mjs --base origin/main --head HEAD",
     "build": "node scripts/build.mjs",
-    "e2e": "playwright test"
+    "test": "node --test \"test/*.test.mjs\"",
+    "e2e": "node scripts/build.mjs && playwright test"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1"

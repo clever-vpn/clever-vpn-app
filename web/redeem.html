@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>兑换礼包</title>
+<link rel="stylesheet" href="app.css">
+<script src="_brand.js"></script>
+<script src="icons.js"></script>
+<script src="bridge.js"></script>
+<script src="api.js"></script>
+<script src="ui.js"></script>
+</head>
+<!-- 三个入口（兑换码 / 礼包 / 奖励卡）同一个响应形状，所以共用一个结果卡。 -->
+<body data-auth="in" data-studio-id="redeem">
+<div class="page">
+
+  <header class="topbar">
+    <a class="nav-btn" href="account.html" aria-label="返回" data-studio-id="redeem.back">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12 15 19.5"/></svg>
+    </a>
+    <h1>兑换礼包</h1>
+  </header>
+
+  <div id="result"></div>
+
+  <label class="field-label" for="code">兑换码</label>
+  <input class="input" id="code" autocapitalize="characters" autocomplete="off"
+         spellcheck="false" placeholder="例如 GUOQING7" data-studio-id="redeem.code">
+  <button class="btn primary" id="btnRedeem" type="button" style="margin-top:12px" disabled data-studio-id="redeem.submit">兑换</button>
+  <p class="note" style="margin-top:12px">兑换码不区分大小写。</p>
+
+  <div class="sec">可领取</div>
+  <div class="list" id="gifts" data-studio-id="redeem.gifts">
+    <div class="row"><span class="grow skeleton" style="height:16px">&nbsp;</span></div>
+  </div>
+  <p class="note" id="giftEmpty" hidden></p>
+</div>
+
+<script>
+UI.page(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  function appliedText(r) {
+    var parts = [];
+    if (r.applied && r.applied.days) parts.push('+' + r.applied.days + ' 天');
+    if (r.applied && r.applied.gb) parts.push('+' + r.applied.gb + ' GB');
+    return parts.join(' · ');
+  }
+
+  function showResult(r) {
+    var box = $('result');
+    var ok = !!r.ok;
+    var lines = [];
+    var applied = appliedText(r);
+    if (applied) lines.push(applied);
+    if (r.expires_at) lines.push('有效期至 ' + UI.date(r.expires_at));
+    if (r.remaining_gb != null) lines.push('剩余 ' + r.remaining_gb + ' GB');
+
+    box.innerHTML = '<div class="card" style="margin-top:12px" role="status" data-studio-id="redeem.result">' +
+      '<div class="state-label" style="font-size:var(--fs-body)">' +
+      UI.esc(ok ? (r.title || '已领取') : (r.title || '未领取')) + '</div>' +
+      (r.result_text ? '<p class="plan-spec">' + UI.esc(r.result_text) + '</p>' : '') +
+      (lines.length ? '<p class="note" style="margin-top:6px">' + UI.esc(lines.join(' · ')) + '</p>' : '') +
+      '</div>';
+  }
+
+  function loadGifts() {
+    Api.gifts().then(function (res) {
+      var items = (res && res.items) || [];
+      if (!items.length) {
+        $('gifts').innerHTML = '';
+        $('gifts').hidden = true;
+        $('giftEmpty').textContent = (res && res.empty_text) || '暂时没有可领取的礼包。';
+        $('giftEmpty').hidden = false;
+        return;
+      }
+      $('gifts').hidden = false;
+      $('giftEmpty').hidden = true;
+      $('gifts').innerHTML = items.map(function (g, i) {
+        var can = g.claimable;
+        return '<div class="row"><span class="grow">' + UI.esc(g.title || '礼包') +
+          (g.badge ? ' <span class="pill small on">' + UI.esc(g.badge) + '</span>' : '') +
+          '<div class="sub">' + UI.esc(g.rewards_text || '') + ' · ' + UI.esc(g.status_text || '') + '</div></span>' +
+          (can
+            ? '<button class="btn plain" data-claim="' + i + '" type="button" style="width:auto">领取</button>'
+            : '<span class="val">' + UI.esc(g.status_text || g.state || '') + '</span>') +
+          '</div>';
+      }).join('');
+      $('gifts').querySelectorAll('[data-claim]').forEach(function (b) {
+        b.onclick = function () { claim(items[Number(b.getAttribute('data-claim'))]); };
+      });
+    }).catch(function (e) {
+      $('gifts').innerHTML = '<div class="row"><span class="grow note">' + UI.esc(UI.errText(e)) + '</span></div>';
+      $('gifts').hidden = false;
+      $('giftEmpty').hidden = true;
+    });
+  }
+
+  async function claim(item) {
+    if (!item || !item.claimable) return;
+    try {
+      var r = await Api.claim(item.claim_action);
+      showResult(r);
+      loadGifts();
+    } catch (e) {
+      UI.toast(UI.errText(e, '领取失败，请稍后再试'), 'bad');
+    }
+  }
+
+  async function redeem() {
+    var code = $('code').value.trim();
+    if (!code) return;
+    $('btnRedeem').disabled = true;
+    $('btnRedeem').textContent = '兑换中…';
+    try {
+      var r = await Api.redeem(code);
+      showResult(r);
+      if (r.ok) { $('code').value = ''; loadGifts(); }
+    } catch (e) {
+      UI.toast(UI.errText(e, '兑换失败，请稍后再试'), 'bad');
+    } finally {
+      $('btnRedeem').textContent = '兑换';
+      $('btnRedeem').disabled = !$('code').value.trim();
+    }
+  }
+
+  $('btnRedeem').onclick = redeem;
+  $('code').oninput = function () { $('btnRedeem').disabled = !$('code').value.trim(); };
+  $('code').onkeydown = function (e) { if (e.key === 'Enter') redeem(); };
+
+  loadGifts();
+});
+</script>
+</body>
+</html>

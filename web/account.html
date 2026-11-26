@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>账户</title>
+<link rel="stylesheet" href="app.css">
+<script src="_brand.js"></script>
+<script src="icons.js"></script>
+<script src="bridge.js"></script>
+<script src="api.js"></script>
+<script src="ui.js"></script>
+</head>
+<!-- tab 根页面：没有返回。订阅状态/邮箱/订单/退出；订单只读。 -->
+<body data-auth="in" data-studio-id="account">
+<div class="page">
+
+  <header class="topbar"><h1>账户</h1></header>
+
+  <div id="cta"></div>
+  <div id="sub"></div>
+
+  <div class="sec">账号</div>
+  <div class="list" data-studio-id="account.email">
+    <div class="row"><span class="grow">邮箱<div class="sub" id="email">—</div></span></div>
+  </div>
+
+  <div class="sec">订单</div>
+  <div class="list" id="orders" data-studio-id="account.orders">
+    <div class="row"><span class="grow skeleton" style="height:16px">&nbsp;</span></div>
+  </div>
+
+  <div class="sec">更多</div>
+  <div class="list">
+    <a class="row" href="redeem.html" data-studio-id="account.redeem"><span class="grow">兑换礼包</span><span class="val" id="giftDot"></span><span class="chev">›</span></a>
+    <a class="row" href="settings.html"><span class="grow">设置</span><span class="chev">›</span></a>
+    <a class="row" data-link="support"><span class="grow">帮助与客服</span><span class="chev">›</span></a>
+  </div>
+
+  <div class="list" style="margin-top:16px">
+    <button class="row" id="logout" type="button" data-studio-id="account.logout">
+      <span class="grow" style="color:var(--bad)">退出登录</span>
+    </button>
+  </div>
+</div>
+<nav data-tabs="account"></nav>
+
+<script>
+UI.page(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var sub = null;
+
+  function toneClass(tone) {
+    if (tone === 'success') return ' ok';
+    if (tone === 'info') return ' on';
+    if (tone === 'warn') return ' warn';
+    if (tone === 'muted') return '';
+    return '';
+  }
+
+  function paintSub(s) {
+    sub = s;
+    var box = $('sub');
+    var cta = $('cta');
+    if (s && s.status === 'active') {
+      cta.innerHTML = '';
+      var rows = [];
+      rows.push(['到期时间', s.expires_at ? UI.date(s.expires_at) : '永久']);
+      if (s.licence_limit != null) rows.push(['设备额度', s.licence_limit + ' 台']);
+      if (s.unlimited) rows.push(['流量', '不限量']);
+      else if (s.remaining_gb != null) rows.push(['剩余流量', s.remaining_gb + ' GB']);
+      if (s.next_reset_at) rows.push(['下次重置', UI.date(s.next_reset_at)]);
+      box.innerHTML = '<div class="card" style="margin-top:8px" data-studio-id="account.subscription">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
+        '<span class="state-label">当前订阅</span>' +
+        (s.tag ? '<span class="pill small' + toneClass(s.tag_tone) + '">' + UI.esc(s.tag) + '</span>' : '') + '</div>' +
+        '<p class="note" style="margin-top:4px">' + UI.esc(s.status_text || '') + '</p>' +
+        '<div class="list tight" style="margin-top:12px;border:0">' +
+        rows.map(function (r) {
+          return '<div class="row"><span class="grow">' + UI.esc(r[0]) + '</span><span class="val">' + UI.esc(r[1]) + '</span></div>';
+        }).join('') + '</div>' +
+        '<a class="btn plain" href="plans.html" style="margin-top:8px">续费或更换套餐</a></div>';
+      return;
+    }
+
+    box.innerHTML = '';
+    var provisioning = s && s.status === 'provisioning';
+    var title = provisioning ? '正在开通' : s && s.status === 'none' ? '还没有订阅' : '订阅不可用';
+    var text = (s && s.status_text) || (provisioning ? '稍等片刻，开通后即可连接。' : '订阅后即可连接。');
+    cta.innerHTML = '<div class="card" style="margin-top:8px">' +
+      '<div class="state-label">' + UI.esc(title) + '</div>' +
+      '<p style="margin-top:4px">' + UI.esc(text) + '</p>' +
+      (provisioning ? '' : '<a class="btn primary" href="plans.html" style="margin-top:16px">' +
+        (s && s.status === 'inactive' ? '查看续费方案' : '查看套餐') + '</a>') +
+      '</div>';
+  }
+
+  function paintOrders(list) {
+    if (!list.length) {
+      $('orders').innerHTML = '<div class="row"><span class="grow note">还没有订单</span></div>';
+      return;
+    }
+    $('orders').innerHTML = list.map(function (o) {
+      return '<div class="row"><span class="grow">' + UI.esc(o.title || '订单') +
+        '<div class="sub">' + UI.esc(UI.date(o.created_at)) +
+        (o.tag ? ' · <span class="pill small' + toneClass(o.tag_tone) + '">' + UI.esc(o.tag) + '</span>' : '') +
+        '</div></span>' +
+        '<span class="val">' + UI.esc(o.amount_text || '') + '<div class="sub">' + UI.esc(o.status_text || '') + '</div></span></div>';
+    }).join('');
+  }
+
+  Api.me().then(function (me) {
+    if (me && me.user && me.user.email) $('email').textContent = me.user.email;
+  }).catch(function (e) {
+    if (e && e.status === 401) location.replace('login.html');
+  });
+
+  Api.subscription().then(paintSub).catch(function (e) {
+    if (e && e.status === 401) { location.replace('login.html'); return; }
+    $('sub').innerHTML = '<div class="alert" style="margin-top:12px"><span>订阅信息暂时加载失败</span>' +
+      '<button class="act" type="button" id="retrySub">重试</button></div>';
+    var b = document.getElementById('retrySub');
+    if (b) b.onclick = function () { location.reload(); };
+  });
+
+  Api.orders(20).then(function (res) { paintOrders((res && res.items) || []); })
+    .catch(function (e) {
+      $('orders').innerHTML = '<div class="row"><span class="grow note">订单加载失败</span>' +
+        '<button class="val" type="button" id="retryOrders">重试</button></div>';
+      var b = document.getElementById('retryOrders');
+      if (b) b.onclick = function () { location.reload(); };
+    });
+
+  Api.gifts().then(function (res) {
+    if (res && res.available_count > 0) $('giftDot').innerHTML = '<span class="pill on small">' + res.available_count + '</span>';
+  }).catch(function () { /* 红点不是关键路径 */ });
+
+  $('logout').onclick = async function () {
+    var yes = await UI.confirm({ title: '退出登录', message: '退出后需要重新验证邮箱。', ok: '退出' });
+    if (!yes) return;
+    try { await Api.logout(); } catch (e) { /* 登出幂等 */ }
+    try { await bridge.deactivate(); } catch (e) { /* 已断开 */ }
+    Api.clearToken();
+    location.replace('welcome.html');
+  };
+});
+</script>
+</body>
+</html>

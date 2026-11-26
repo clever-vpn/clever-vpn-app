@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>设置</title>
+<link rel="stylesheet" href="app.css">
+<script src="_brand.js"></script>
+<script src="icons.js"></script>
+<script src="bridge.js"></script>
+<script src="api.js"></script>
+<script src="ui.js"></script>
+</head>
+<!-- 推入页：左上角返回首页。协议/分流就地生效，不跳页、不用保存按钮。 -->
+<body data-auth="in" data-studio-id="settings">
+<div class="page">
+
+  <header class="topbar">
+    <a class="nav-btn" href="index.html" aria-label="返回" data-studio-id="settings.back">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12 15 19.5"/></svg>
+    </a>
+    <h1>设置</h1>
+  </header>
+
+  <div class="sec">协议</div>
+  <div class="list" id="protocols" role="radiogroup" aria-label="协议" data-studio-id="settings.protocol"></div>
+
+  <div class="sec">分流</div>
+  <div class="list" data-studio-id="settings.split">
+    <a class="row" href="split.html"><span class="grow">区域</span><span class="val" id="vRegion"></span><span class="chev">›</span></a>
+    <a class="row" href="split.html"><span class="grow">IP 规则</span><span class="val" id="vIp"></span><span class="chev">›</span></a>
+    <a class="row" href="split.html"><span class="grow">域名规则</span><span class="val" id="vDomain"></span><span class="chev">›</span></a>
+  </div>
+
+  <div class="sec">连接信息</div>
+  <div class="list" data-studio-id="settings.info">
+    <div class="row"><span class="grow">状态</span><span class="val" id="vStatus">—</span></div>
+    <div class="row"><span class="grow">线路</span><span class="val" id="vLine">—</span></div>
+    <div class="row"><span class="grow">协议</span><span class="val" id="vProto">—</span></div>
+    <div class="row"><span class="grow">中继</span><span class="val" id="vRelay">—</span></div>
+    <div class="row"><span class="grow">下游代理</span><span class="val" id="vUpstream">—</span></div>
+  </div>
+
+  <div class="sec">主题</div>
+  <div class="list" id="themes" role="radiogroup" aria-label="主题" data-studio-id="settings.theme"></div>
+
+  <div class="sec">关于</div>
+  <div class="list" data-studio-id="settings.about">
+    <a class="row" data-link="website"><span class="grow">官网</span><span class="val" data-link-host></span><span class="chev">›</span></a>
+    <a class="row" data-link="support"><span class="grow">帮助与客服</span><span class="chev">›</span></a>
+    <a class="row" data-link="terms"><span class="grow">服务条款</span><span class="chev">›</span></a>
+    <a class="row" data-link="privacy"><span class="grow">隐私政策</span><span class="chev">›</span></a>
+  </div>
+</div>
+
+<script>
+UI.page(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var PROTOCOLS = [
+    { id: 'auto', name: '自动', desc: '自动选择协议（默认）' },
+    { id: 'udpTunnel', name: 'UDP 隧道', desc: 'UDP 隧道模式' },
+    { id: 'udpFast', name: 'UDP 极速', desc: 'UDP 极速模式' },
+    { id: 'udpStable', name: 'UDP 稳定', desc: 'UDP 稳定模式' },
+    { id: 'tcpFast', name: 'TCP 极速', desc: 'TCP 极速模式' },
+    { id: 'tcpStable', name: 'TCP 稳定', desc: 'TCP 稳定模式' },
+  ];
+  var THEMES = [
+    { id: 'auto', name: '跟随系统', desc: '随系统的深浅色切换' },
+    { id: 'light', name: '浅色', desc: '' },
+    { id: 'dark', name: '深色', desc: '' },
+  ];
+  var TICK = '<span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS.check + '</svg></span>';
+  var settingsCache = null;
+  var linesCache = [];
+  var state = null;
+
+  function protoName(id) {
+    var hit = PROTOCOLS.filter(function (p) { return p.id === id; })[0];
+    return hit ? hit.name : id;
+  }
+
+  function paintProtocol() {
+    $('protocols').innerHTML = PROTOCOLS.map(function (p) {
+      return '<button class="opt" role="radio" data-p="' + p.id + '" aria-checked="' +
+        (settingsCache.protocol === p.id) + '">' +
+        '<span class="grow">' + p.name + (p.desc ? '<span class="ds">' + p.desc + '</span>' : '') + '</span>' +
+        TICK + '</button>';
+    }).join('');
+  }
+
+  function paintSplit() {
+    var sp = settingsCache.split;
+    $('vRegion').textContent = sp.region.enable ? '开 · ' + UI.regionName(sp.region.code) : '关';
+    $('vIp').textContent = sp.ip.enable ? '开' + (sp.ip.ip_cidr.length ? ' · ' + sp.ip.ip_cidr.length + ' 条' : '') : '关';
+    var n = sp.domain.domain.length + sp.domain.domain_suffix.length + sp.domain.domain_regex.length;
+    $('vDomain').textContent = sp.domain.enable ? '开' + (n ? ' · ' + n + ' 条' : '') : '关';
+  }
+
+  function paintInfo() {
+    var line = null;
+    if (state && state.line) line = linesCache.filter(function (l) { return l.id === state.line.id; })[0] || state.line;
+    if (!line) {
+      var saved = Number(localStorage.getItem('app.line')) || 0;
+      line = linesCache.filter(function (l) { return l.id === saved; })[0] ||
+        linesCache.filter(function (l) { return l.isDefault; })[0] || null;
+    }
+    var st = state && state.status;
+    $('vStatus').textContent = st === 'connected' ? '已连接' : st === 'connecting' ? '连接中…' : '未连接';
+    $('vLine').textContent = line ? line.label : '—';
+    $('vProto').textContent = protoName(settingsCache.protocol);
+    // 中继 / 下游代理是线路的内容属性：只说明有没有，地址不在这里编造
+    $('vRelay').textContent = line ? (line.hasRelay ? '有' : '无') : '—';
+    $('vUpstream').textContent = line ? (line.hasUpstream ? '有' : '无') : '—';
+  }
+
+  function paintThemes() {
+    var cur = UI.theme();
+    $('themes').innerHTML = THEMES.map(function (t) {
+      return '<button class="opt" role="radio" data-t="' + t.id + '" aria-checked="' + (cur === t.id) + '">' +
+        '<span class="grow">' + t.name + (t.desc ? '<span class="ds">' + t.desc + '</span>' : '') + '</span>' +
+        TICK + '</button>';
+    }).join('');
+  }
+
+  $('protocols').onclick = async function (e) {
+    var el = e.target.closest('[data-p]');
+    if (!el) return;
+    var id = el.getAttribute('data-p');
+    if (id === settingsCache.protocol) return;
+    settingsCache.protocol = id;
+    paintProtocol();
+    paintInfo();
+    try { await bridge.setProtocol(id); } catch (err) { UI.toast(UI.errText(err, '协议切换失败'), 'bad'); }
+  };
+
+  $('themes').onclick = function (e) {
+    var el = e.target.closest('[data-t]');
+    if (!el) return;
+    UI.setTheme(el.getAttribute('data-t'));
+    paintThemes();
+  };
+
+  (async function load() {
+    try {
+      settingsCache = await bridge.settings();
+    } catch (e) {
+      settingsCache = { protocol: 'auto', split: { region: { enable: false, code: 'CN' }, ip: { enable: false, ip_cidr: [] }, domain: { enable: false, domain: [], domain_suffix: [], domain_regex: [] } } };
+    }
+    paintProtocol();
+    paintSplit();
+    paintThemes();
+    paintInfo();
+
+    try { linesCache = (await bridge.lines()).lines || []; } catch (e) { linesCache = []; }
+    try { state = await bridge.state(); } catch (e) { state = null; }
+    paintInfo();
+
+    bridge.on('state', function (s) { state = s; paintInfo(); });
+  })();
+});
+</script>
+</body>
+</html>

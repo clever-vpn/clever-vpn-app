@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>套餐</title>
+<link rel="stylesheet" href="app.css">
+<script src="_brand.js"></script>
+<script src="icons.js"></script>
+<script src="bridge.js"></script>
+<script src="api.js"></script>
+<script src="ui.js"></script>
+</head>
+<!-- 卡片只渲染服务端给的东西：kind_label / specs[] / 价格 / promo_badge / cta / buyable / reason。
+     不拼规格、不算价、不自造按钮文案。 -->
+<body data-auth="any" data-studio-id="plans">
+<div class="page">
+
+  <header class="topbar">
+    <a class="nav-btn" id="back" href="welcome.html" aria-label="返回" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12 15 19.5"/></svg>
+    </a>
+    <h1>套餐</h1>
+  </header>
+
+  <div id="note"></div>
+  <div id="paybox"></div>
+  <div id="cards" class="plans-grid" style="margin-top:16px" data-studio-id="plans.cards"></div>
+  <p class="note" id="foot" style="margin-top:20px" hidden></p>
+</div>
+<nav data-tabs="plans"></nav>
+
+<script>
+UI.page(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var plans = [];
+  var currency = 'CNY';
+  var provisioningText = '';
+  var pollTimer = null;
+
+  function perUnit(p) {
+    if (p.kind !== 'period') return '一次性';
+    var d = Number(p.term_days) || 0;
+    if (d >= 700) return '/ ' + Math.round(d / 365) + ' 年';
+    if (d >= 300) return '/ 年';
+    return '/ 月';
+  }
+
+  function noteHtml() {
+    if (provisioningText) {
+      return '<div class="alert" style="margin-top:12px"><span>' + UI.esc(provisioningText) + '</span></div>';
+    }
+    if (!Api.hasToken()) {
+      $('back').hidden = false;   // 匿名没有 tab 栏：给一条退路
+      return '<div class="alert" style="margin-top:12px"><span>价格对所有用户一样；登录后即可订阅。</span>' +
+        '<a class="act" href="login.html?next=plans.html">登录</a></div>';
+    }
+    return '';
+  }
+
+  function cardHtml(p) {
+    var main = p.display_price_minor != null ? p.display_price_minor : p.price_minor;
+    var strike = p.compare_at_price_minor != null ? p.compare_at_price_minor : null;
+    var specs = Array.isArray(p.specs) ? p.specs : [];
+    var disabled = !p.buyable;
+    return '<div class="card plan" data-studio-id="plans.card.' + UI.esc(p.plan_id) + '">' +
+      '<div class="plan-head"><span class="plan-name">' + UI.esc(p.name) +
+      (p.kind_label ? ' <span class="plan-kind">' + UI.esc(p.kind_label) + '</span>' : '') + '</span>' +
+      (p.promo_badge ? '<span class="pill on small">' + UI.esc(p.promo_badge) + '</span>' : '') + '</div>' +
+      '<div class="plan-price"><b>' + UI.money(main, p.currency || currency) + '</b>' +
+      '<span class="per">' + perUnit(p) + '</span>' +
+      (strike != null ? '<s class="per">' + UI.money(strike, p.currency || currency) + '</s>' : '') + '</div>' +
+      (specs.length ? '<p class="plan-spec">' + specs.map(UI.esc).join(' · ') + '</p>' : '') +
+      (p.price_note ? '<p class="plan-spec">' + UI.esc(p.price_note) + '</p>' : '') +
+      '<button class="btn primary" data-plan="' + UI.esc(p.plan_id) + '"' + (disabled ? ' disabled' : '') + '>' +
+      UI.esc(p.cta || (disabled ? '不可购买' : '购买')) + '</button>' +
+      (disabled && p.reason ? '<p class="plan-note">' + UI.esc(p.reason) + '</p>' : '') +
+      '</div>';
+  }
+
+  function render() {
+    $('note').innerHTML = noteHtml();
+    if (!plans.length) {
+      $('cards').innerHTML = '<div class="empty"><b>暂无可购买的套餐</b>稍后再来看看，或联系客服。</div>';
+      return;
+    }
+    $('cards').innerHTML = plans.map(cardHtml).join('');
+    $('cards').querySelectorAll('[data-plan]').forEach(function (b) {
+      b.onclick = function () { buy(b.getAttribute('data-plan')); };
+    });
+  }
+
+  function payPanel(html) {
+    $('paybox').innerHTML = html ? '<div class="card" style="margin-top:12px" role="status">' + html + '</div>' : '';
+  }
+
+  function stopPoll() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  function successPanel() {
+    payPanel('<div class="state-label" style="font-size:var(--fs-body)">支付成功</div>' +
+      '<p class="note" style="margin-top:4px">订阅已生效。</p>' +
+      '<a class="btn primary" href="index.html" style="margin-top:12px">去连接</a>');
+  }
+
+  async function pollOrder(code, tries) {
+    if (tries <= 0) {
+      payPanel('<div class="state-label" style="font-size:var(--fs-body)">支付结果确认中</div>' +
+        '<p class="note" style="margin-top:4px">可以稍后在账户 → 订单里查看，或再确认一次。</p>' +
+        '<button class="btn plain" id="pay-again" type="button">再确认一次</button>');
+      document.getElementById('pay-again').onclick = function () { pollOrder(code, 30); };
+      return;
+    }
+    try {
+      var o = await Api.order(code);
+      if (o.status === 'paid') { stopPoll(); successPanel(); return; }
+      if (o.status === 'closed' || o.status === 'refunded') {
+        stopPoll();
+        payPanel('<div class="state-label" style="font-size:var(--fs-body)">订单未完成</div>' +
+          '<p class="note" style="margin-top:4px">' + UI.esc(o.status === 'closed' ? '订单已关闭，可以重新下单。' : '订单已退款。') + '</p>' +
+          '<button class="btn plain" id="pay-done" type="button">知道了</button>');
+        document.getElementById('pay-done').onclick = function () { payPanel(''); };
+        return;
+      }
+    } catch (e) {
+      if (e && e.status === 404) { stopPoll(); payPanel(''); return; }
+      // 网络抖动继续等
+    }
+    pollTimer = setTimeout(function () { pollOrder(code, tries - 1); }, 2000);
+  }
+
+  async function startCheckout(p, method) {
+    var q;
+    try {
+      q = await Api.quote(p.plan_id);
+    } catch (e) {
+      UI.toast(UI.errText(e, '报价失败，请稍后再试'), 'bad');
+      return;
+    }
+    if (q.action === 'blocked') { UI.toast(q.reason || '暂不可购买', 'bad'); return; }
+
+    var extra = [];
+    if (q.discount_label) extra.push(q.discount_label);
+    if (q.residual_minor) extra.push('已抵扣 ' + UI.money(q.residual_minor, p.currency || currency));
+    var yes = await UI.confirm({
+      title: p.name,
+      message: method.label + ' · 应付 ' + UI.money(q.payable_minor, p.currency || currency) +
+        (extra.length ? '（' + extra.join('，') + '）' : ''),
+      ok: '去支付',
+    });
+    if (!yes) return;
+
+    var order;
+    try {
+      order = await Api.createOrder({ plan_id: p.plan_id, payment_method: method.id });
+    } catch (e) {
+      UI.toast(UI.errText(e, '下单失败，请稍后再试'), 'bad');
+      return;
+    }
+    payPanel('<div class="state-label" style="font-size:var(--fs-body)">等待支付</div>' +
+      '<p class="note" style="margin-top:4px">在浏览器里完成支付后回到这里，会自动确认。</p>' +
+      '<button class="btn plain" id="pay-check" type="button">我已完成支付</button>');
+    document.getElementById('pay-check').onclick = function () { pollOrder(order.order_code, 30); };
+
+    if (order.pay_url) UI.openLink(order.pay_url);
+    pollOrder(order.order_code, 30);
+  }
+
+  async function buy(planId) {
+    var p = plans.filter(function (x) { return x.plan_id === planId; })[0];
+    if (!p || !p.buyable) return;
+    if (p.action === 'login_required') { location.href = 'login.html?next=plans.html'; return; }
+
+    var methods = Array.isArray(p.payment_methods) ? p.payment_methods : [];
+    if (!methods.length) { UI.toast('当前没有可用的支付方式，请联系客服', 'bad'); return; }
+
+    var method = methods[0];
+    if (methods.length > 1) {
+      var picked = await UI.confirm({
+        title: '选择支付方式',
+        options: methods.map(function (m) { return { id: m.id, label: m.label }; }),
+      });
+      if (!picked) return;
+      method = methods.filter(function (m) { return m.id === picked; })[0];
+      if (!method) return;
+    }
+    startCheckout(p, method);
+  }
+
+  async function load() {
+    $('cards').innerHTML = '<div style="padding:8px 0"><div class="skeleton-row" style="height:180px"></div>' +
+      '<div class="skeleton-row" style="height:180px"></div></div>';
+    try {
+      plans = await Api.plans();
+      render();
+    } catch (e) {
+      $('cards').innerHTML = '<div class="empty"><b>套餐加载失败</b>' + UI.esc(UI.errText(e)) +
+        '<div style="margin-top:16px"><button class="btn plain" id="retry" type="button">重试</button></div></div>';
+      var b = document.getElementById('retry');
+      if (b) b.onclick = load;
+    }
+  }
+
+  Api.meta().then(function (m) {
+    currency = (m && m.currency) || currency;
+    window.__currency = currency;
+    render();
+  }).catch(function () { /* 价格仍可用 plan.currency */ });
+
+  Api.subscription().then(function (s) {
+    if (s && s.status === 'provisioning') {
+      provisioningText = s.status_text || '正在开通';
+      $('note').innerHTML = noteHtml();
+    }
+  }).catch(function () { /* 匿名/离线：不挡浏览 */ });
+
+  load();
+});
+</script>
+</body>
+</html>

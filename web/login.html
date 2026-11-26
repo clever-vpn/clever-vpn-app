@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>登录</title>
+<link rel="stylesheet" href="app.css">
+<script src="_brand.js"></script>
+<script src="icons.js"></script>
+<script src="bridge.js"></script>
+<script src="api.js"></script>
+<script src="ui.js"></script>
+</head>
+<!-- 登录 = 邮箱 → 验证码。只回答三个问题：这里填什么、按了会发生什么、刚才发生了什么。 -->
+<body data-auth="out" class="no-tabs" data-studio-id="login">
+<div class="page login-page">
+
+  <header class="login-head">
+    <span class="login-logo" data-brand-logo data-studio-id="login.logo"></span>
+    <h1 id="loginTitle">登录</h1>
+    <p class="login-sent" id="loginSent" hidden>已发送至 <b id="sentEmail"></b></p>
+    <p class="note" id="trialNote" hidden></p>
+  </header>
+
+  <section id="step1" data-studio-id="login.email-step">
+    <label class="field-label" for="email">邮箱</label>
+    <input class="input" id="email" type="email" inputmode="email" autocomplete="email"
+           autocapitalize="off" spellcheck="false" placeholder="example@email.com">
+
+    <!-- 邀请码只在建号那一刻生效；选填、默认收起，不挡主路径 -->
+    <div id="refBox" hidden>
+      <label class="field-label" for="referral">邀请码（选填）</label>
+      <input class="input" id="referral" autocapitalize="characters" spellcheck="false"
+             autocomplete="off" placeholder="FRIEND-A1B2">
+    </div>
+    <div class="login-links" style="justify-content:flex-start">
+      <button class="link-btn" id="btnRef" type="button">有邀请码？</button>
+    </div>
+
+    <button class="btn primary" id="btnSend" style="margin-top:8px">发送验证码</button>
+  </section>
+
+  <section id="step2" hidden data-studio-id="login.code-step">
+    <label class="field-label" for="code">验证码</label>
+    <input class="input code" id="code" inputmode="numeric" autocomplete="one-time-code"
+           maxlength="6" placeholder="000000">
+    <button class="btn primary" id="btnVerify" style="margin-top:16px">登录</button>
+    <div class="login-links">
+      <button class="link-btn" id="btnResend" disabled>重新发送</button>
+      <span class="sep">·</span>
+      <button class="link-btn" id="btnChange">换个邮箱</button>
+    </div>
+  </section>
+
+  <p class="form-error" id="err" role="alert" hidden></p>
+
+  <p class="note login-legal" data-legal></p>
+</div>
+
+<script>
+UI.page(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var timer = null;
+  var busy = false;
+  var email = '';
+
+  if (!Api.available()) {
+    $('btnSend').disabled = true;
+    showError('当前版本未开通在线服务，请联系服务商。');
+  }
+
+  // 试用文案只来自 /meta.trial_text（空 = 不出现）
+  Api.meta().then(function (m) {
+    if (m && m.trial_text) { $('trialNote').textContent = m.trial_text; $('trialNote').hidden = false; }
+    window.__currency = m && m.currency;
+  }).catch(function () { /* 离线不影响登录入口的呈现 */ });
+
+  function showError(msg) { $('err').textContent = msg; $('err').hidden = !msg; }
+  function clearError() { showError(''); }
+
+  function startCountdown(sec) {
+    var left = Math.max(1, Number(sec) || 60);
+    var btn = $('btnResend');
+    clearInterval(timer);
+    btn.disabled = true;
+    btn.textContent = '重新发送（' + left + 's）';
+    timer = setInterval(function () {
+      left -= 1;
+      if (left <= 0) {
+        clearInterval(timer);
+        btn.disabled = false;
+        btn.textContent = '重新发送';
+      } else {
+        btn.textContent = '重新发送（' + left + 's）';
+      }
+    }, 1000);
+  }
+
+  async function send() {
+    if (busy) return;
+    email = $('email').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      $('email').classList.add('bad');
+      $('email').focus();
+      showError('请填写正确的邮箱地址');
+      return;
+    }
+    clearError();
+    busy = true;
+    $('btnSend').disabled = true;
+    $('btnSend').textContent = '发送中…';
+    try {
+      var res = await Api.sendCode(email);
+      $('sentEmail').textContent = email;
+      $('loginSent').hidden = false;
+      $('loginTitle').textContent = '输入验证码';
+      $('step1').hidden = true;
+      $('step2').hidden = false;
+      $('code').value = '';
+      $('code').focus();
+      startCountdown(res && res.cooldown);
+    } catch (e) {
+      showError(UI.errText(e, '验证码发送失败，请稍后再试'));
+      if (e && e.status === 429) startCountdown(60);
+    } finally {
+      busy = false;
+      $('btnSend').disabled = false;
+      $('btnSend').textContent = '发送验证码';
+    }
+  }
+
+  async function verify() {
+    if (busy) return;
+    var code = $('code').value.replace(/\D/g, '');
+    if (code.length !== 6) {
+      $('code').classList.add('bad');
+      $('code').focus();
+      showError('请填写 6 位验证码');
+      return;
+    }
+    clearError();
+    busy = true;
+    $('btnVerify').disabled = true;
+    $('btnVerify').textContent = '登录中…';
+    try {
+      var payload = { email: email, code: code };
+      var referral = $('referral').value.trim();
+      if (referral) payload.referral_code = referral;
+      var res = await Api.verify(payload);
+      Api.setToken(res.session_token);
+      var next = new URLSearchParams(location.search).get('next');
+      location.replace(next === 'plans.html' ? 'plans.html' : 'index.html');
+    } catch (e) {
+      showError(UI.errText(e, '登录失败，请稍后再试'));
+      busy = false;
+      $('btnVerify').disabled = false;
+      $('btnVerify').textContent = '登录';
+    }
+  }
+
+  $('btnSend').onclick = send;
+  $('btnResend').onclick = send;
+  $('btnVerify').onclick = verify;
+
+  $('btnRef').onclick = function () {
+    $('refBox').hidden = false;
+    $('btnRef').parentNode.hidden = true;
+    $('referral').focus();
+  };
+
+  $('btnChange').onclick = function () {
+    clearInterval(timer);
+    $('btnResend').disabled = true;
+    $('btnResend').textContent = '重新发送';
+    $('loginTitle').textContent = '登录';
+    $('loginSent').hidden = true;
+    $('step2').hidden = true;
+    $('step1').hidden = false;
+    $('email').focus();
+    $('email').select();
+  };
+
+  $('email').oninput = function () { $('email').classList.remove('bad'); clearError(); };
+  $('code').oninput = function () {
+    $('code').classList.remove('bad');
+    clearError();
+    if ($('code').value.replace(/\D/g, '').length === 6) $('btnVerify').focus();
+  };
+  $('code').onkeydown = function (e) { if (e.key === 'Enter') verify(); };
+  $('email').onkeydown = function (e) { if (e.key === 'Enter') send(); };
+});
+</script>
+</body>
+</html>
