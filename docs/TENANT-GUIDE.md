@@ -1,5 +1,9 @@
 # 租户改造指南
 
+> **用 App Studio 的租户不需要读本文。** Studio 会替你做这里的所有事（fork、提交、PR、
+> 合并、构建、同步上游），你只在设计器里操作。
+> 本文面向**自己维护仓库**的人（开源用户 / 没有接 studio 的部署）。
+
 目标：**只改配置和页面，不碰原生代码。**
 
 > 🤖 **用 agent 自动实施**：本仓库内置 skill `.github/skills/white-label-app/SKILL.md`。
@@ -10,10 +14,11 @@
 > 发布正确；改 `shell-*`、`kit/`、`scripts/` 就要自己维护。
 > **发布只走 GitHub Actions**，不要在本地 build 后手工上传当正式发布。
 
-## 零、fork 之后第一件事：把门禁打开
+## 零、拿到仓库之后第一件事：把门禁打开
 
-> **GitHub 的 fork 不继承任何分支保护设置。** 你 fork 出来的仓库，`main` 默认是完全
+> **GitHub 的 fork 不继承任何分支保护设置。** 你拿到的仓库，`main` 默认是完全
 > 无保护的：CI 红了照样能合并，甚至能直接 `git push origin main`。
+> （自动检查由 Studio 打开；**分支保护只能你自己设** —— GitHub 不允许我们改仓库设置。）
 
 1. 仓库页 → **Settings** → **Rules** → **Rulesets** → **New branch ruleset**
 2. Name 填 `protect-main`，Enforcement 选 **Active**，Target 选 **Include default branch**
@@ -41,7 +46,9 @@
 
 不想手改 `web/` 的，把仓库绑定到设计器：
 
-1. CRM 后台 → **应用** → 〔连接仓库〕→ 授权 GitHub App → 选择你 fork 的仓库
+1. CRM 后台 → **应用** → 〔连接仓库〕→ 授权 GitHub App。
+   **不用先自己 Fork**：Studio 会先找有没有本模板的 fork，有就复用，没有就替你建一个
+   （建在你刚授权的账号下），并替你打开自动检查。
 2. 回 CRM → **应用** → 〔打开设计器〕→ 进入 `/edit/<draft>`
 3. 在设计器里改完 → **发布**：Studio 只负责开 PR（`studio/design|config|onboard/*`），
    合并在你自己的仓库里点
@@ -55,7 +62,8 @@
 | `studio/onboard/*` | 以上 + `app.lock.json`（首次接入） |
 | 任何 PR | ❌ `shell-*/`、`kit/`、`scripts/`、`.github/`、`docs/`、`template.json` |
 
-> Studio 不建仓、不 fork、不合并；仓库始终是你的。
+> Studio 会确保仓库存在（复用你的 fork，或建一个新的），发布在四道检查全绿后由它合并并打版本；
+> 它**不会删除或转移**你的仓库，也不会碰 `shell-*/`、`kit/`、`scripts/`。仓库始终是你的。
 > **人机校验（Turnstile）与 App 无关**：模板永远不加载第三方脚本。
 
 ## 一、三步上线
