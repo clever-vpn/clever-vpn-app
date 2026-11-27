@@ -1,5 +1,9 @@
 # 租户改造指南
 
+> **用 App Studio 的租户不需要读本文。** Studio 会替你做这里的所有事（fork、提交、PR、
+> 合并、构建、同步上游），你只在设计器里操作。
+> 本文面向**自己维护仓库**的人（开源用户 / 没有接 studio 的部署）。
+
 目标：**只改配置和页面，不碰原生代码。**
 
 > 🤖 **用 agent 自动实施**：本仓库内置 skill `.github/skills/white-label-app/SKILL.md`。
