@@ -2,6 +2,8 @@
 name: validate
 
 on:
+  # 允许 studio 显式触发：fork 出来的仓库不会因 pull_request 事件自动跑 workflow
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
