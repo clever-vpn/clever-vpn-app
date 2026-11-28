@@ -65,8 +65,8 @@ const s = await bridge.state()     // 状态快照（页面刷新后必调）
 bridge.on('state', s => {})        // 状态变化事件
 ```
 
-`bridge@2` 共 13 个方法（含 `capabilities` / `settings` / `setProtocol` / `setSplit` / 可选的 `open`）。
-登录 / 注册 / 计费**不走 bridge**，由 `web/` 直接请求租户自己的 CRM（`clients` 契约）。
+`bridge@3` 共 14 个方法（含 `capabilities` / `settings` / `setProtocol` / `setSplit` / 可选的 `open`，以及 CRM 的 `crmRequest`）。
+登录 / 注册 / 计费也走 `bridge.crmRequest`：WebView 不直接请求 CRM，由壳 → kit → libbox 完成（无壳时回退 `fetch`）。
 
 > 详细定义见 [`docs/BRIDGE.md`](docs/BRIDGE.md)。
 
@@ -98,7 +98,7 @@ bridge.on('state', s => {})        // 状态变化事件
 | 文档 | 内容 |
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 分层、为什么用 Web UI、壳如何隔离 |
-| [`docs/BRIDGE.md`](docs/BRIDGE.md) | `bridge@2` 方法、状态结构、错误码、安全约束 |
+| [`docs/BRIDGE.md`](docs/BRIDGE.md) | `bridge@3` 方法、状态结构、错误码、安全约束 |
 | [`docs/UI-PRINCIPLES.md`](docs/UI-PRINCIPLES.md) | 界面原则（M1–M14）与产品级验收清单 |
 | [`docs/TENANT-GUIDE.md`](docs/TENANT-GUIDE.md) | 租户改造清单（改哪些、别改哪些、怎么验收） |
 | [`docs/UI-REFERENCE.md`](docs/UI-REFERENCE.md) | 竞品与平台实测（素材参考，不是规范） |

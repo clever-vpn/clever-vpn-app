@@ -16,12 +16,13 @@ export const LIMITS = { fileBytes: 1_000_000, totalBytes: 8_000_000, files: 200,
 
 /** 模板包/契约版本（template.json 与 app-studio-app 同号） */
 export const STUDIO_CONTRACT = 4;
-export const BRIDGE_VERSION = 2;
+export const BRIDGE_VERSION = 3;
 
-/** bridge@2 方法白名单（decisions §10）；下划线开头的内部字段放行 */
+/** bridge@3 方法白名单（decisions §10）；下划线开头的内部字段放行 */
 export const BRIDGE_METHODS = [
   'capabilities', 'activate', 'deactivate', 'lines', 'setLine', 'connect',
   'disconnect', 'state', 'settings', 'setProtocol', 'setSplit', 'open', 'on',
+  'crmRequest',
 ];
 
 export const ERROR_CODES = ['EXPIRED', 'FROZEN', 'DEVICE_LIMIT', 'NETWORK', 'INTERNAL'];

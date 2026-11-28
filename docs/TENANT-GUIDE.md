@@ -172,7 +172,7 @@ CI 的 `validate` / `web-contract` / `web-smoke` / `path-whitelist` 必须全绿
 | `web.index` | `web/index.html` 存在 |
 | `web.paths` | 相对路径、无 `..`、后缀在白名单 |
 | `assets.no-external` | 不得引用任何外部 URL（CDN / 字体 / 图片 / import） |
-| `bridge.methods` | 只调用 `bridge@2` 的 13 个方法；不得直接碰原生注入点 |
+| `bridge.methods` | 只调用 `bridge@3` 的 14 个方法；不得直接碰原生注入点 |
 | `bridge.state-on-load` | 加载后必须调一次 `state()`（事件不会重放） |
 | `bridge.error-copy` | 5 个错误码都有用户可见文案 |
 | `bridge.frozen-neutral` | `FROZEN` 必须中性（不得出现违规/封禁） |
@@ -213,7 +213,7 @@ cd web && python3 -m http.server 8000
 ```
 dist/
 ├── web/            UI（含注入的 _brand.js 与 _brand-logo.<ext>）
-└── manifest.json   品牌 / 版本 / kit 版本 / 模板包版本 / 构建时间
+└── manifest.json   品牌 / 版本 / kit 版本 / 模板包版本 / 构建时间 / CRM 地址（壳读 base）
 ```
 
 平台安装包由 `shell-*` 的构建产出（Windows `msix`/`exe`、macOS `dmg`、Android `apk`），

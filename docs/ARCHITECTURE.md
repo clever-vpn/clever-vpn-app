@@ -7,9 +7,9 @@
 │  10 页：欢迎 / 登录 / 连接 / 线路 / 套餐 / 账户   │
 │        / 设置 / 分流 / 地区 / 兑换                │
 │  纯 HTML/CSS/JS，单一来源，三端共用               │
-│  依赖只有三个：window.BRAND、bridge@2、CRM 契约   │
+│  依赖只有三个：window.BRAND、bridge@3、CRM 契约   │
 └───────────────┬──────────────────────────────────┘
-                │  bridge@2（13 方法 + 1 事件，见 BRIDGE.md）
+                │  bridge@3（14 方法 + 1 事件，见 BRIDGE.md）
 ┌───────────────┴──────────────────────────────────┐
 │  shell-*（开源，薄）                              │
 │  Windows WinUI3+WebView2 / macOS SwiftUI+WKWebView │
@@ -56,7 +56,7 @@
 
 ## 为什么壳可替换
 
-`web/` 只依赖 `bridge@2`，不依赖任何壳的特性。因此：
+`web/` 只依赖 `bridge@3`，不依赖任何壳的特性。因此：
 
 - 现在：手搓壳（复用既有客户端经验，成本最低）
 - 以后若需支持更多桌面平台或统一升级/托盘：可整体换成 Tauri 等，**租户代码一行不改**
@@ -82,4 +82,5 @@ sha 不一致即失败。`template.json` 是"这条流水线期望的模板包�
 | Windows 隧道提权 | 需要服务 / Wintun 驱动，属壳与 kit 的职责 |
 | Android | 不建议用 WebView 做主界面（状态栏、动画、电量），可用 Compose 原生，但契约不变 |
 | 商店内购 / 设备管理 / 系统代理 / 多语言 | v1 不做，契约留口（见 `clever-vpn-docs` 的 `app-studio-app` §4 与 `clients`） |
+| CRM 的 CF 优选 IP | WebView 不能用“IP + 域名 SNI”拨号；由壳把 `bridge.crmRequest` 转给 kit/libbox（优选 IP → A 记录 → 域名），页面只拿 `{status, body}` |
 | 人机校验（Turnstile） | **永久不做**：App 不加载第三方脚本，CRM 若启用则自行拒绝 |

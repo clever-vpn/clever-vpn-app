@@ -42,12 +42,57 @@
     return '请求失败，请稍后重试';
   }
 
+  // CRM 传输：有壳走 bridge.crmRequest（libbox 里做优选 IP → A 记录 → 域名），
+  // 无壳（本地开发 / Studio 预览 / Site / 旧壳）回退浏览器 fetch。
+  // 两条路都返回同形 {status, body}，call() 的超时/重试/401/信封逻辑因此不用分叉。
+  function bridgeCrmRequest(method, path, headers, bodyText, timeout) {
+    if (!window.bridge || typeof window.bridge.crmRequest !== 'function') return null;
+    return new Promise(function (resolve, reject) {
+      var timer = setTimeout(function () { reject(new Error('timeout')); }, timeout + 1000);
+      window.bridge.crmRequest({
+        method: method,
+        path: path,
+        headers: headers,
+        body: bodyText,
+        timeoutMs: timeout,
+      }).then(function (res) {
+        clearTimeout(timer);
+        if (!res || typeof res.status !== 'number' || typeof res.body !== 'string') {
+          reject(new Error('invalid bridge response'));
+          return;
+        }
+        resolve({ status: res.status, body: res.body });
+      }, function (err) {
+        clearTimeout(timer);
+        reject(err);
+      });
+    });
+  }
+
+  async function fetchCrmRequest(method, path, headers, bodyText, signal) {
+    var res = await fetch(url(path), {
+      method: method,
+      headers: headers,
+      body: bodyText,
+      signal: signal,
+      cache: 'no-store',
+    });
+    return { status: res.status, body: await res.text() };
+  }
+
+  async function transport(method, path, headers, bodyText, signal, timeout) {
+    var bridged = bridgeCrmRequest(method, path, headers, bodyText, timeout);
+    if (bridged) return bridged;
+    return fetchCrmRequest(method, path, headers, bodyText, signal);
+  }
+
   async function call(method, path, body, opts) {
     var o = opts || {};
     var headers = { accept: 'application/json' };
     if (body !== undefined) headers['content-type'] = 'application/json';
     if (o.auth !== false && token) headers.authorization = 'Bearer ' + token;
 
+    var bodyText = body === undefined ? undefined : JSON.stringify(body);
     var retries = method === 'GET' && o.retry !== false ? 2 : 0;
     var attempt = 0;
 
@@ -55,21 +100,15 @@
       var ac = typeof AbortController === 'function' ? new AbortController() : null;
       var timer = ac ? setTimeout(function () { ac.abort(); }, TIMEOUT) : null;
       try {
-        var res = await fetch(url(path), {
-          method: method,
-          headers: headers,
-          body: body === undefined ? undefined : JSON.stringify(body),
-          signal: ac ? ac.signal : undefined,
-          cache: 'no-store',
-        });
+        var res = await transport(method, path, headers, bodyText, ac ? ac.signal : undefined, TIMEOUT);
         if (timer) clearTimeout(timer);
-        var text = await res.text();
+        var text = res.body;
         var data = null;
         if (text) {
           try { data = JSON.parse(text); } catch (e) { data = null; }
         }
         if (res.status === 401) setToken(null);
-        if (!res.ok) {
+        if (res.status < 200 || res.status >= 300) {
           var env = (data && data.error) || {};
           throw {
             code: env.code || 'service_unavailable',

@@ -1,4 +1,4 @@
-/* bridge@2（契约：docs/BRIDGE.md）
+/* bridge@3（契约：docs/BRIDGE.md）
  *
  * 有壳：`window.bridge` 由壳在页面脚本之前注入，这里一个字段都不覆盖。
  * 没壳：提供一个同形的 mock（本地开发 / Studio 预览 / 浏览器直开）。
@@ -126,7 +126,7 @@
 
   window.bridge = {
     capabilities: function () {
-      return Promise.resolve({ bridge: '2', platform: platform(), store: null });
+      return Promise.resolve({ bridge: '3', platform: platform(), store: null });
     },
 
     activate: function (key) {
