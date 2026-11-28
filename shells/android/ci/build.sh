@@ -39,7 +39,7 @@ IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 VERSION_CODE="$((10#$MAJOR * 10000 + 10#$MINOR * 100 + 10#$PATCH))"
 [ "$VERSION_CODE" -ge 1 ] || VERSION_CODE=1   # 0.0.0-dev 这类开发 tag 也要能装
 
-log "版本 $RELEASE_TAG（$VERSION / code $VERSION_CODE）· kit $KIT_VERSION · $APP_NAME ($APP_ID)"
+log "版本 ${RELEASE_TAG}（${VERSION} / code ${VERSION_CODE}）· kit ${KIT_VERSION} · ${APP_NAME} (${APP_ID})"
 
 # 图标（生成到 res/mipmap-*，不入库）
 "$CI_DIR/make-icons.sh" "$DIST/icon.png" "$ANDROID_DIR/app/src/main/res"

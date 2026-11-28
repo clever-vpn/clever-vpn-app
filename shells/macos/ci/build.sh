@@ -37,7 +37,7 @@ KIT_VERSION="$(plutil -extract apple raw -o - "$ROOT/shells/versions.json")"
 [ -n "$KIT_VERSION" ] || die "shells/versions.json 里没有 apple 版本"
 RELEASE_TAG="${RELEASE_TAG:-v$VERSION}"
 
-log "版本 $RELEASE_TAG · kit $KIT_VERSION · $APP_DISPLAY_NAME ($APP_BUNDLE_ID)"
+log "版本 ${RELEASE_TAG} · kit ${KIT_VERSION} · ${APP_DISPLAY_NAME} (${APP_BUNDLE_ID})"
 
 # ── 2) 资源：web / manifest / 图标 ────────────────────────
 RES="$MACOS_DIR/CleverVpn/Resources"
@@ -79,7 +79,7 @@ if [ -n "${APPLE_CERT_P12_BASE64:-}" ]; then
   security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
   security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
   SIGNED=1
-  log "签名材料就绪（profile：$APP_PROFILE / $SYSEXT_PROFILE）"
+  log "签名材料就绪（profile：${APP_PROFILE} / ${SYSEXT_PROFILE}）"
 else
   log "⚠ 没有 APPLE_CERT_P12_BASE64：出未签名包（只用于构建/功能验收，不能分发）"
 fi
