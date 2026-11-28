@@ -35,6 +35,7 @@ $manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
 $appName = if ($manifest.name) { [string]$manifest.name } else { 'Clever VPN' }
 $version = if ($manifest.version) { [string]$manifest.version -replace '^v', '' } else { '0.0.0' }
 $version = ($version -split '-')[0]
+if ($version -notmatch '^\d+\.\d+\.\d+$') { $version = '0.0.0' }
 $tag = if ($env:RELEASE_TAG) { [string]$env:RELEASE_TAG } else { "v$version" }
 
 # kit 版本：只从 shells/versions.json 读（node 已由 workflow 装好；没有 node 时退回 PowerShell 解析）

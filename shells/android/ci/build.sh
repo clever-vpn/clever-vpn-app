@@ -27,6 +27,8 @@ META="$(node -e '
 ' "$DIST/manifest.json")"
 APP_NAME="$(printf '%s' "$META" | sed -n '1p')"
 VERSION="$(printf '%s' "$META" | sed -n '2p' | sed 's/^v//' | sed 's/-.*$//')"
+# 本地未设 RELEASE_TAG 时 dist 里可能是 "dev"：退回 0.0.0，别让数字解析炸掉
+case "$VERSION" in ''|*[!0-9.]*) VERSION=0.0.0 ;; esac
 APP_ID="$(printf '%s' "$META" | sed -n '3p')"
 [ -n "$APP_ID" ] || die "dist/manifest.json 里没有 bundle_id.android"
 
