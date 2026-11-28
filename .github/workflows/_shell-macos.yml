@@ -6,6 +6,9 @@
 name: shell-macos
 
 on:
+  # 临时分支验证用：验证完删除（稳定的入口是 release.yml）
+  push:
+    branches: [feat/shell-macos]
   workflow_call:
     inputs:
       tag:
