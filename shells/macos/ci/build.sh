@@ -104,7 +104,7 @@ log "SwiftPM 单测（Core）"
 swift test --package-path "$MACOS_DIR/Core"
 
 log "生成 Xcode 工程"
-(cd "$MACOS_DIR" && xcodegen generate --spec project.generated.yml --project CleverVpn.xcodeproj)
+(cd "$MACOS_DIR" && xcodegen generate --spec project.generated.yml)
 
 # ── 5) archive ───────────────────────────────────────────
 ARCH="$WORK/CleverVpn.xcarchive"
