@@ -1,0 +1,48 @@
+# 上游模板版本 tag：只在上游仓库、只打 template-vX.Y.Z；不产出租户安装包。
+name: template-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '模板 tag，必须形如 template-vX.Y.Z'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: template-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    if: github.repository == 'clever-vpn/clever-vpn-app'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: 只允许 main 上的 template-v* tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::template-release 只能从 main dispatch（当前 ${GITHUB_REF}）"
+            exit 1
+          fi
+          if ! [[ "$INPUT_TAG" =~ ^template-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::tag 必须是 template-vX.Y.Z（收到 $INPUT_TAG）"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/$INPUT_TAG" >/dev/null; then
+            echo "::error::tag $INPUT_TAG 已存在；模板 tag 不可移动"
+            exit 1
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$INPUT_TAG" -m "$INPUT_TAG"
+          git push origin "$INPUT_TAG"

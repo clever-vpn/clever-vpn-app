@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 /**
- * 路径白名单 —— 按 PR 的分支前缀判定允许改哪些路径（app-studio-app §2）
+ * 路径白名单 —— 按 ref 判定允许改哪些路径（app-studio-app §2）
  *
  * 用法：
  *   node scripts/check-paths.mjs --base main --head HEAD
  *   node scripts/check-paths.mjs --base origin/main --head HEAD   # CI（fetch-depth: 0）
  *
- * 规则（decisions §1 / §6.3）：
- *   studio/design/<sha>   app/web/**、app/assets/**、app/app.json；**不得**改 crm.*
- *   studio/config/<sha>   仅 app/app.json（可以改 crm.*）
- *   studio/onboard/<sha>  design 的路径 + app.lock.json（首次接入）
- *   其它分支             人工/上游分支：只提示、不拦截（上游自己要改 scripts/、.github/）
+ * 规则（Contract 6）：
+ *   studio/app            设计分支：app/web/**、app/assets/**、app/app.json、app.lock.json
+ *   studio/build/<sha>    临时构建：相对 main 只允许 app/** + app.lock.json
+ *   其它分支              上游/人工分支：只提示、不拦截（上游自己要改 scripts/、.github/）
  *
  * 任何 studio 分支都不得改：shells/、scripts/、.github/、docs/、README.md、LICENSE。
  * 退出码：0 = 通过，1 = 越界，2 = 用法/环境错误。
@@ -41,10 +40,9 @@ try {
 }
 
 const branch = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || git(['rev-parse', '--abbrev-ref', HEAD]);
-const prefix = branch.startsWith('studio/design/') ? 'design'
-  : branch.startsWith('studio/config/') ? 'config'
-    : branch.startsWith('studio/onboard/') ? 'onboard'
-      : 'other';
+const prefix = branch === 'studio/app' ? 'design'
+  : branch.startsWith('studio/build/') ? 'build'
+    : 'other';
 
 const FORBIDDEN = [
   [/^shells\//, 'shells/ 属于上游壳'],
@@ -56,9 +54,8 @@ const FORBIDDEN = [
 ];
 
 const ALLOW = {
-  design: [/^app\/web\//, /^app\/assets\//, /^app\/app\.json$/],
-  config: [/^app\/app\.json$/],
-  onboard: [/^app\/web\//, /^app\/assets\//, /^app\/app\.json$/, /^app\.lock\.json$/],
+  design: [/^app\/web\//, /^app\/assets\//, /^app\/app\.json$/, /^app\.lock\.json$/],
+  build: [/^app\/web\//, /^app\/assets\//, /^app\/app\.json$/, /^app\.lock\.json$/],
 };
 
 let changes;
@@ -89,7 +86,7 @@ const allowed = ALLOW[prefix];
 for (const c of changes) {
   const hard = FORBIDDEN.find(([re]) => re.test(c.path));
   if (hard) {
-    violations.push({ path: c.path, rule: 'forbidden', message: `${hard[1]}（任何 studio PR 都不得修改）` });
+    violations.push({ path: c.path, rule: 'forbidden', message: `${hard[1]}（任何 studio 分支都不得修改）` });
     continue;
   }
   if (!allowed.some((re) => re.test(c.path))) {
@@ -101,28 +98,9 @@ for (const c of changes) {
   }
 }
 
-// 设计分支不得改 crm.*：它决定登录与收款去向
-if (prefix === 'design') {
-  const readApp = (ref) => {
-    try { return JSON.parse(git(['show', `${ref}:app/app.json`])); } catch { return null; }
-  };
-  const before = readApp(baseRef);
-  const after = readApp(HEAD);
-  if (before && after) {
-    const a = JSON.stringify(before.crm ?? {});
-    const b = JSON.stringify(after.crm ?? {});
-    if (a !== b) {
-      violations.push({
-        path: 'app/app.json',
-        rule: 'crm-locked',
-        message: `studio/design/* 不得修改 crm.*（${a} → ${b}）；要改业务入口请走 studio/config/*`,
-      });
-    }
-  }
-}
-
-if (prefix === 'onboard' && !changes.some((c) => c.path === 'app.lock.json')) {
-  console.log('  ⚠ onboard 分支没有带 app.lock.json：确认这是不是一次真正的首次接入');
+// build 分支必须带 app.lock.json；设计分支允许首次发布前还没有
+if (prefix === 'build' && !changes.some((c) => c.path === 'app.lock.json' && c.status !== 'D')) {
+  violations.push({ path: 'app.lock.json', rule: 'required', message: 'build 分支必须包含 app.lock.json' });
 }
 
 if (violations.length) {

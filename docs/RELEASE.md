@@ -2,17 +2,26 @@
 
 Last updated: 2026-11-28
 
-> 唯一路径是 **GitHub Actions → `release` → Run workflow**。
+> 唯一路径是 **GitHub Actions → `app-release` → Run workflow**（只接受 `studio/build/*`）。
 > 本地 `node scripts/build.mjs` 只用于预览与排障，产出的包不算发布。
 > 品牌配置见 [`TENANT-GUIDE.md`](TENANT-GUIDE.md)，壳与 UI 的接口见 [`BRIDGE.md`](BRIDGE.md)，
 > 壳的目录与构建入口见 [`../shells/README.md`](../shells/README.md)。
+
+## 0. 两种 tag
+
+| tag | 谁创建 | 含义 |
+|---|---|---|
+| `template-vX.Y.Z` | 上游 `template-release` | 模板版本；fork 会继承，租户发布**忽略** |
+| `vX.Y.Z` | `app-release` | 租户发布；指向 build commit，Release assets 挂这里 |
+
+`app-release` 只接受 `studio/build/*` 分支；tag 只能指向该 build commit，已存在且指向别的 commit 时直接失败，不会移动发布 tag。
 
 ## 1. 两个输入
 
 | 输入 | 说明 |
 |---|---|
 | `platform` | `all` / `web` / `android` / `apple` / `windows`。见 §2 |
-| `tag` | 留空 = 在最新 release 上 `patch+1`（首次 `v0.1.0`）；也可写 `1.2.3` 或 `v1.2.3`。统一按 `v` 前缀发布 |
+| `tag` | 留空 = 在最新**租户** `v*` tag 上 `patch+1`（首次 `v0.1.0`）；也可写 `1.2.3` 或 `v1.2.3`。`template-v*` 是上游模板版本，不参与 bump |
 
 ## 2. 平台语义
 
@@ -28,7 +37,7 @@ Last updated: 2026-11-28
 
 1. **`web` 永远先构建。** 原生包内嵌同一份 `dist/`（web + manifest + icon），所以每次 release 都有 web zip。
 2. **「已实现」只看一件事**：该平台的 `ci` 入口存在（见 §3）。显式选未实现的平台 ⇒ 直接失败，不建 release。
-3. **不建空 release**：所有被选中的平台都成功后才建 tag + release。
+3. **不建空 release**：所有被选中的平台都成功后才建 `v*` tag + release；tag 指向 build commit，不可移动。
 
 ## 3. 壳的构建入口契约
 
@@ -88,7 +97,7 @@ clever-vpn-app-macos-vX.Y.Z.dmg
 clever-vpn-app-windows-vX.Y.Z.msi
 ```
 
-- 只有当**所有被选中的平台都成功**才建 tag + release；
+- 只有当**所有被选中的平台都成功**才建 `v*` tag + release；tag 指向 build commit；
 - `all` 里被跳过的平台属于「没做」而不是「做坏了」：run 里有 `::warning::`，release 里也**没有**对应资产。
 
 ## 7. 自检
@@ -103,5 +112,5 @@ npx playwright test
 actionlint .github/workflows/*.yml
 ```
 
-发布后核对：Release 里资产齐全 → 下载安装 → 页面上点「连接」真的能上外网
+发布后核对：`v*` tag 指向 build commit、Release 里资产齐全 → 下载安装 → 页面上点「连接」真的能上外网
 → 关闭重开状态正确恢复。**CI 绿不等于能装**，真机验收是 T2（见 `clever-vpn-docs` 的 `design/app-studio.md` §4）。

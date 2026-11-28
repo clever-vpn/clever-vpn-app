@@ -152,7 +152,7 @@ cd web && python3 -m http.server 8000
 **不要**在本地 build 后手工上传作为正式发布。
 
 1. 改完走分支 + PR（四个 required check 会拦）；
-2. 合并后 → Actions → **release** → **Run workflow**：
+2. 合并后 → Actions → **app-release** → **Run workflow**（只接受 `studio/build/*`）：
    - `platform` 选 `web` / `android` / `apple` / `windows`，或 `all`；
      显式选了还没实现的平台会直接失败，只告诉你缺什么，**不会**建出没有资产的 release；
    - `tag` 留空 = 自动在上个 release 上 patch+1（首次 `v0.1.0`）；
@@ -184,7 +184,7 @@ cd web && python3 -m http.server 8000
 | `缺少错误码文案` / `FROZEN 文案必须中性` | `app/web/ui.js` 的 `ERROR_COPY` 表，5 个 code 都要有 |
 | `brand.vars`：变量区外出现 `#rrggbb` | 把颜色挪进 `app.css` 顶部的变量声明，页面里用 `var(...)` / `color-mix(...)` |
 | `validate` 通过但页面没变色 | 用了硬编码颜色，没走 CSS 变量；或没重新 `build.mjs`（`_brand.js` 是生成物） |
-| `path-whitelist` 红：越界 | `studio/design/*` 不得改 `crm.*`；`studio/config/*` 只能改 `app.json`；任何 PR 不得改 `scripts/`、`.github/`、`shells/` |
+| `path-whitelist` 红：越界 | `studio/app` 只能改 `app/**` + `app.lock.json`；`studio/build/*` 相对 `main` 只能改 `app/**` + `app.lock.json`；任何 studio 分支不得改 `scripts/`、`.github/`、`shells/` |
 
 ## 6. 交付核对
 
@@ -193,5 +193,5 @@ cd web && python3 -m http.server 8000
 - [ ] `app/assets/icon.png` 是自己的 1024×1024 无 alpha 图（不是占位图）
 - [ ] `bundle_id` 四端都是自己的反域名、非 `com.example.*`
 - [ ] `links` 指向真实条款/隐私/客服页
-- [ ] Actions `release` 成功，Release 里有 zip 资产
+- [ ] Actions `app-release` 成功，Release 里有 zip 资产
 - [ ] 未修改 `shells/`、`scripts/`、`app.lock.json`（改了就要自己维护）

@@ -1,23 +1,23 @@
-# PR 门禁：app.json + 图标 / web 静态契约 / web 行为冒烟 / 路径白名单
-name: validate
+# 上游模板维护门禁：只在上游仓库跑；fork 里跳过。
+# 公共检查逻辑在 scripts/ 里；这里保留稳定 job 名 validate / web-contract / web-smoke。
+name: template-validate
 
 on:
-  # 允许 studio 显式触发：fork 出来的仓库不会因 pull_request 事件自动跑 workflow
-  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-# 同一分支的新提交取消旧跑，省租户的 Actions 分钟数
 concurrency:
-  group: validate-${{ github.ref }}
+  group: template-validate-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate:
+    if: github.repository == 'clever-vpn/clever-vpn-app'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +31,7 @@ jobs:
 
   web-contract:
     name: web-contract
+    if: github.repository == 'clever-vpn/clever-vpn-app'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +51,7 @@ jobs:
 
   path-whitelist:
     name: path-whitelist
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'clever-vpn/clever-vpn-app'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,11 +60,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - name: 按分支前缀校验允许路径
-        run: node scripts/check-paths.mjs --base "origin/${{ github.base_ref }}" --head HEAD
+      - name: 上游分支只提示（人工/上游可改任意路径）
+        env:
+          BASE: ${{ github.base_ref || 'main' }}
+        run: node scripts/check-paths.mjs --base "origin/$BASE" --head HEAD
 
   web-smoke:
     name: web-smoke
+    if: github.repository == 'clever-vpn/clever-vpn-app'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

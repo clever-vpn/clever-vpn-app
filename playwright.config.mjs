@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = Number(process.env.PORT || 8123);
 
 /**
- * web/ 的端到端冒烟（CI: validate.yml 的 web-smoke job）。
+ * web/ 的端到端冒烟（CI: app-validate.yml / template-validate.yml 的 web-smoke job）。
  *
  * 只跑 Chromium：两个壳（WebView2 / Android WebView）都是 Chromium 内核。
  * WKWebView 的差异（安全区、字体）靠真机抽查，见 docs/TENANT-GUIDE.md。

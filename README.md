@@ -71,14 +71,14 @@ bridge.on('state', s => {})        // 状态变化事件
 
 > 详细定义见 [`docs/BRIDGE.md`](docs/BRIDGE.md)。模拟壳在 [`shells/mock/bridge.js`](shells/mock/bridge.js)。
 
-## 门禁（PR 上四个 required check）
+## 门禁（build ref 上四个 required check）
 
 | job | 跑什么 |
 |---|---|
 | `validate` | `node scripts/build.mjs --check`（app.json / 图标 / logo / app.lock.json） |
 | `web-contract` | `node scripts/check-web.mjs`（14 条静态约束，与 Studio 的 `check_draft` 同一份实现） |
 | `web-smoke` | Playwright：10 页 × 视口 × 主题截图、点击流、错误码、品牌替换、无 console error |
-| `path-whitelist` | 按分支前缀判允许路径（`studio/design|config|onboard/*`），越界即失败 |
+| `path-whitelist` | 按 ref 判允许路径（`studio/app` 设计、`studio/build/*` 构建），越界即失败 |
 
 本地跑同一套：`npm ci && node scripts/build.mjs && node --test && npx playwright test`。
 
@@ -90,7 +90,7 @@ bridge.on('state', s => {})        // 状态变化事件
   ```
 - 提交信息用 Conventional Commits（中文描述），例如：
   `feat(web): 线路列表支持搜索` / `fix(bridge): 连接超时重试`
-- 发布走 Actions → `release`（`workflow_dispatch`）：先选 `platform`
+- 发布走 Actions → `app-release`（`workflow_dispatch`，只接受 `studio/build/*`）：先选 `platform`
   （`all` / `web` / `android` / `apple` / `windows`），`tag` 留空则自动 `patch+1`，统一 `v` 前缀。
   细节见 [`docs/RELEASE.md`](docs/RELEASE.md)。
 

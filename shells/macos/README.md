@@ -28,4 +28,4 @@ bash shells/macos/ci/build.sh          # 没配证书 ⇒ 未签名 DMG（只做
   `APPLE_PROFILE_APP_BASE64`、`APPLE_PROFILE_SYSEXT_BASE64`、`APPLE_ASC_KEY_ID`、
   `APPLE_ASC_ISSUER_ID`、`APPLE_ASC_KEY_P8_BASE64`。
 - 首次启动会请求安装系统扩展；用户需在「系统设置 → 隐私与安全性」批准后连接才可用。
-- CI：`.github/workflows/_shell-macos.yml`（`release.yml` 调用，也可单独 dispatch）。
+- CI：`.github/workflows/_shell-macos.yml`（`app-release.yml` 调用，也可单独 dispatch）。

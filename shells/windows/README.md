@@ -23,4 +23,4 @@ pwsh -File shells/windows/ci/build.ps1              # 未签名 MSI → shells/w
 - 产物：`shells/windows/ci/out/clever-vpn-app-windows-<tag>.msi`；安装目录固定 `%ProgramFiles%\CleverVpn`，
   exe 固定 `CleverVpn.exe`（kit 把它注册成 `CleverVpnBrokerService`）。
 - 签名：`WINDOWS_PFX_BASE64` / `WINDOWS_PFX_PASSWORD`；没有就出未签名包（只用于功能验收）。
-- CI：`.github/workflows/_shell-windows.yml`（`release.yml` 调用，也可单独 dispatch）。
+- CI：`.github/workflows/_shell-windows.yml`（`app-release.yml` 调用，也可单独 dispatch）。
