@@ -7,7 +7,13 @@ DEST_DIR="$2"
 
 declare -a DENSITIES=("mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192")
 
-if command -v convert >/dev/null 2>&1; then
+if command -v magick >/dev/null 2>&1; then
+  for pair in "${DENSITIES[@]}"; do
+    density="${pair%%:*}"; size="${pair##*:}"
+    mkdir -p "$DEST_DIR/mipmap-$density"
+    magick "$SRC" -resize "${size}x${size}" "$DEST_DIR/mipmap-$density/ic_launcher.png"
+  done
+elif command -v convert >/dev/null 2>&1; then
   for pair in "${DENSITIES[@]}"; do
     density="${pair%%:*}"; size="${pair##*:}"
     mkdir -p "$DEST_DIR/mipmap-$density"
@@ -20,7 +26,7 @@ elif command -v sips >/dev/null 2>&1; then
     sips -z "$size" "$size" "$SRC" --out "$DEST_DIR/mipmap-$density/ic_launcher.png" >/dev/null
   done
 else
-  echo "✗ 需要 ImageMagick（convert）或 macOS 的 sips" >&2
+  echo "✗ 需要 ImageMagick（magick/convert）或 macOS 的 sips" >&2
   exit 1
 fi
 echo "✓ 图标 $SRC → $DEST_DIR/mipmap-*"
