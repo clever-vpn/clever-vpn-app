@@ -1,0 +1,665 @@
+{
+  "builtTestProducts" : [
+    {
+      "binaryPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.xctest/Contents/MacOS/CleverVpnShellCorePackageTests",
+      "packagePath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core",
+      "productName" : "CleverVpnShellCorePackageTests"
+    }
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.CleverVpnShellCore-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/sources",
+      "importPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/BridgeDispatcher.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/BridgeTypes.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/Manifest.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/ShellBackend.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "CleverVpnShellCore",
+      "moduleOutputPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules/CleverVpnShellCore.swiftmodule",
+      "objects" : [
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeDispatcher.swift.o",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeTypes.swift.o",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/Manifest.swift.o",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/ShellBackend.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/include/CleverVpnShellCore-Swift.h",
+        "-swift-version",
+        "5",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "core",
+        "-disable-sandbox"
+      ],
+      "outputFileMapPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeDispatcher.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeTypes.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/Manifest.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/ShellBackend.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules/CleverVpnShellCore.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/BridgeDispatcher.swift",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/BridgeTypes.swift",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/Manifest.swift",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/ShellBackend.swift"
+      ],
+      "tempsPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.CleverVpnShellCorePackageTests-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/sources",
+      "importPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.derived/runner.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules/CleverVpnShellCoreTests.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "CleverVpnShellCorePackageTests",
+      "moduleOutputPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules/CleverVpnShellCorePackageTests.swiftmodule",
+      "objects" : [
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/runner.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/include/CleverVpnShellCorePackageTests-Swift.h",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "core",
+        "-disable-sandbox"
+      ],
+      "outputFileMapPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules/CleverVpnShellCorePackageTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.derived/runner.swift"
+      ],
+      "tempsPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.CleverVpnShellCoreTests-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/sources",
+      "importPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Tests/CleverVpnShellCoreTests/BridgeDispatcherTests.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules/CleverVpnShellCore.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "CleverVpnShellCoreTests",
+      "moduleOutputPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules/CleverVpnShellCoreTests.swiftmodule",
+      "objects" : [
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/BridgeDispatcherTests.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-swift-version",
+        "5",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "core",
+        "-disable-sandbox"
+      ],
+      "outputFileMapPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/BridgeDispatcherTests.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules/CleverVpnShellCoreTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Tests/CleverVpnShellCoreTests/BridgeDispatcherTests.swift"
+      ],
+      "tempsPath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "CleverVpnShellCore" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "CleverVpnShellCore",
+      "-package-name",
+      "core",
+      "-c",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/BridgeDispatcher.swift",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/BridgeTypes.swift",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/Manifest.swift",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/ShellBackend.swift",
+      "-I",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/include/CleverVpnShellCore-Swift.h",
+      "-swift-version",
+      "5",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "core",
+      "-disable-sandbox",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "CleverVpnShellCorePackageTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "CleverVpnShellCorePackageTests",
+      "-package-name",
+      "core",
+      "-c",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.derived/runner.swift",
+      "-I",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/include/CleverVpnShellCorePackageTests-Swift.h",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "core",
+      "-disable-sandbox",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "CleverVpnShellCoreTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "CleverVpnShellCoreTests",
+      "-package-name",
+      "core",
+      "-c",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Tests/CleverVpnShellCoreTests/BridgeDispatcherTests.swift",
+      "-I",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-swift-version",
+      "5",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "core",
+      "-disable-sandbox",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "CleverVpnShellCore" : [
+
+    ],
+    "CleverVpnShellCorePackageTests" : [
+      "CleverVpnShellCoreTests",
+      "CleverVpnShellCore"
+    ],
+    "CleverVpnShellCoreTests" : [
+      "CleverVpnShellCore"
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+    "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.derived/runner.swift" : {
+      "inputs" : [
+
+      ],
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.derived/runner.swift"
+        }
+      ]
+    }
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/BridgeDispatcher.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/BridgeTypes.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/Manifest.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/ShellBackend.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/sources"
+    },
+    "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.derived/runner.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/sources"
+    },
+    "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeDispatcher.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeTypes.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/Manifest.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/ShellBackend.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/BridgeDispatcherTests.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.product/Objects.LinkFileList"
+    },
+    "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Tests/CleverVpnShellCoreTests/BridgeDispatcherTests.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/sources"
+    },
+    "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}

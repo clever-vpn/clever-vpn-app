@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/primary.swiftdeps"
+  },
+  "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Tests/CleverVpnShellCoreTests/BridgeDispatcherTests.swift": {
+    "dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/BridgeDispatcherTests.d",
+    "object": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/BridgeDispatcherTests.swift.o",
+    "swiftmodule": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/BridgeDispatcherTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/BridgeDispatcherTests.swiftdeps",
+    "diagnostics": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCoreTests.build/BridgeDispatcherTests.dia"
+  }
+}

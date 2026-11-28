@@ -1,0 +1,33 @@
+{
+  "": {
+    "swift-dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/primary.swiftdeps"
+  },
+  "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/BridgeDispatcher.swift": {
+    "dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeDispatcher.d",
+    "object": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeDispatcher.swift.o",
+    "swiftmodule": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeDispatcher~partial.swiftmodule",
+    "swift-dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeDispatcher.swiftdeps",
+    "diagnostics": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeDispatcher.dia"
+  },
+  "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/BridgeTypes.swift": {
+    "dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeTypes.d",
+    "object": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeTypes.swift.o",
+    "swiftmodule": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeTypes~partial.swiftmodule",
+    "swift-dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeTypes.swiftdeps",
+    "diagnostics": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/BridgeTypes.dia"
+  },
+  "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/Manifest.swift": {
+    "dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/Manifest.d",
+    "object": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/Manifest.swift.o",
+    "swiftmodule": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/Manifest~partial.swiftmodule",
+    "swift-dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/Manifest.swiftdeps",
+    "diagnostics": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/Manifest.dia"
+  },
+  "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/Sources/CleverVpnShellCore/ShellBackend.swift": {
+    "dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/ShellBackend.d",
+    "object": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/ShellBackend.swift.o",
+    "swiftmodule": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/ShellBackend~partial.swiftmodule",
+    "swift-dependencies": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/ShellBackend.swiftdeps",
+    "diagnostics": "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCore.build/ShellBackend.dia"
+  }
+}

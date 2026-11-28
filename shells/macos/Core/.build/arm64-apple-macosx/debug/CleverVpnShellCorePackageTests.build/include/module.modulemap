@@ -1,0 +1,3 @@
+module CleverVpnShellCorePackageTests {
+    header "/Users/bolinwu/Clever-VPN/Next-VPN/clever-vpn-app/shells/macos/Core/.build/arm64-apple-macosx/debug/CleverVpnShellCorePackageTests.build/include/CleverVpnShellCorePackageTests-Swift.h"
+}
