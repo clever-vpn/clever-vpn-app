@@ -1,0 +1,48 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Fragment>
+    <ComponentGroup Id="CleverVpnComponents" Directory="INSTALLFOLDER">
+      <!-- 发布目录里的所有文件；exe 单独成一个组件（要 Launch/shortcut 用 FileRef） -->
+      <Files Include="!(bindpath.PublishDir)\**" Directory="INSTALLFOLDER">
+        <Exclude Files="!(bindpath.PublishDir)\CleverVpn.exe"></Exclude>
+      </Files>
+
+      <Component Id="CleverVpnExeComponent" Directory="INSTALLFOLDER">
+        <File Id="CleverVpnExe" Source="!(bindpath.PublishDir)\CleverVpn.exe" KeyPath="yes" />
+      </Component>
+
+      <Component Id="CleverVpnServiceControl" Directory="INSTALLFOLDER">
+        <!-- broker 由 kit 在首次连接时按需安装；卸载时停掉并移除。 -->
+        <ServiceControl Id="ScRemoveBroker"
+                        Name="CleverVpnBrokerService"
+                        Stop="both"
+                        Remove="both"
+                        Wait="yes" />
+        <RegistryValue Root="HKLM"
+                       Key="Software\!(bind.Property.Manufacturer)\!(bind.Property.ProductName)"
+                       Name="service-control"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+
+      <Component Id="CleverVpnShortcuts" Directory="INSTALLFOLDER">
+        <Shortcut Id="StartMenuShortcut"
+                  Directory="ProgramMenuFolder"
+                  Name="!(bind.Property.ProductName)"
+                  Advertise="no"
+                  Icon="AppIcon"
+                  IconIndex="0"
+                  Description="!(bind.Property.ProductName)"
+                  Target="[INSTALLFOLDER]CleverVpn.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\!(bind.Property.Manufacturer)\!(bind.Property.ProductName)"
+                       Name="installed-shortcuts"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

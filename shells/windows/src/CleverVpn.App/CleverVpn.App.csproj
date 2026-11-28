@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>CleverVpn.App</RootNamespace>
+    <AssemblyName>CleverVpn</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsPackageType>None</WindowsPackageType>
+    <UseWinUI>true</UseWinUI>
+    <!-- WinUI + dotnet build 需要它才能找到 MSIX/PRI 工具链（WindowsAppSDK 1.1+ 的官方修法） -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- 自己要先判断 Service.Run()（服务模式），所以关掉 XAML 生成的 Main -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
+    <!-- 版本不写死：由 ci 从 shells/versions.json 读出后 -p:KitVersion 传入 -->
+    <PackageReference Include="Clever-Vpn-Windows-Kit" Version="$(KitVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CleverVpn.Core\CleverVpn.Core.csproj" />
+  </ItemGroup>
+
+  <!-- dist/ 是唯一输入：web/、manifest.json、icon.png（图标由 ci 转成 app.ico） -->
+  <ItemGroup>
+    <Content Include="$(MSBuildProjectDirectory)\..\..\..\..\dist\web\**\*"
+             Link="web\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildProjectDirectory)\..\..\..\..\dist\manifest.json"
+             Link="manifest.json"
+             CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="RequireKitVersion" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(KitVersion)' == ''"
+           Text="KitVersion 未设置：用 shells/windows/ci/build.ps1 构建，或 dotnet build -p:KitVersion=x.y.z（版本见 shells/versions.json）" />
+  </Target>
+</Project>

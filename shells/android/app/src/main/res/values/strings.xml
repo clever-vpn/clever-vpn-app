@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name 由 build.gradle.kts 的 resValue 从 dist/manifest.json 注入；这里只留兜底注释 -->
+</resources>
