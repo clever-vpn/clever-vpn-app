@@ -1,49 +1,42 @@
 #!/usr/bin/env node
 /**
- * 构建：校验 app.json / 图标 / logo / app.lock.json / template.json
- *      → 注入 web/_brand.js → 拷 logo → 复制到 dist/ → 写 manifest
+ * 构建：校验 app/app.json / 图标 / logo / app.lock.json
+ *      → 注入 app/web/_brand.js → 拷 logo → 复制到 dist/ → 写 manifest
  *
  * 用法：
  *   node scripts/build.mjs           # 构建
  *   node scripts/build.mjs --check   # 只校验（CI 的 PR 门禁用）
  *
- * 输入分四层，别混（契约在 clever-vpn-docs 的 docs/contracts/）：
- *   app.json         租户面：name / short_name / tagline / color / icon / logo
+ * 输入分三层，别混（契约在 clever-vpn-docs 的 docs/contracts/）：
+ *   app/app.json      租户面：name / short_name / tagline / color / icon / logo
  *                            / crm{base,id} / links{terms,privacy,support,website} → app-json.md
- *   assets/icon.png  租户面：1024×1024 PNG、无 alpha、≤1MB                        → app-json.md §3
- *   app.lock.json    机器面：lock_version / bundle_id / generator / source_revision → app-studio-app.md §1.1
- *   template.json    平台面：模板包版本 / studio_contract / bridge / limits          → app-studio-app.md §4.2
- *   kit/kit.version  平台面：闭源核心版本（平台发布时更新，租户不改）
+ *   app/assets/       租户面：1024×1024 PNG（无 alpha、≤1MB）、logo（PNG/SVG）     → app-json.md §3
+ *   app.lock.json     机器面：lock_version / bundle_id / generator / source_revision → app-studio-app.md §1.1
+ *
+ * 桥的版本在 scripts/lib/web-check.mjs（BRIDGE_VERSION），不在这里读写。
  */
 import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync, existsSync, statSync, copyFileSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LIMITS, STUDIO_CONTRACT, BRIDGE_VERSION } from './lib/web-check.mjs';
+import { LIMITS } from './lib/web-check.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const APP = join(ROOT, 'app');
 const CHECK_ONLY = process.argv.includes('--check');
 const RELEASE = Boolean(process.env.RELEASE_TAG || process.env.GITHUB_REF_NAME?.startsWith('v'));
 const fail = (msg) => { console.error(`✗ ${msg}`); process.exit(1); };
 const ok = (msg) => console.log(`  ✓ ${msg}`);
 const warn = (msg) => console.log(`  ⚠ ${msg}`);
 
-function readJson(rel) {
-  const p = join(ROOT, rel);
-  if (!existsSync(p)) fail(`缺少 ${rel}`);
+function readJson(rel, base = ROOT) {
+  const p = join(base, rel);
+  if (!existsSync(p)) fail(`缺少 ${base === APP ? 'app/' : ''}${rel}`);
   try { return JSON.parse(readFileSync(p, 'utf8')); }
   catch (e) { fail(`${rel} 不是合法 JSON：${e.message}`); }
 }
 
-const app = readJson('app.json');
+const app = readJson('app.json', APP);
 const lock = readJson('app.lock.json');
-const tpl = readJson('template.json');
-
-// kit/kit.version 允许注释行与空行
-const kitVersionPath = join(ROOT, 'kit', 'kit.version');
-if (!existsSync(kitVersionPath)) fail('缺少 kit/kit.version');
-const kitVersion = readFileSync(kitVersionPath, 'utf8')
-  .split('\n').map((l) => l.replace(/#.*$/, '').trim()).filter(Boolean).join('');
-if (!kitVersion) fail('kit/kit.version 里没有版本号');
 
 // ── 校验 ──
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -53,32 +46,13 @@ const httpsUrl = /^https:\/\/[^\s]+$/;
 const errors = [];
 const warnings = [];
 
-// ── template.json：模板包元数据（studio 取起点时先读它）──
-{
-  if (tpl.package !== 1) errors.push(`template.json: package 必须是 1（当前 ${JSON.stringify(tpl.package)}）`);
-  if (tpl.studio_contract !== STUDIO_CONTRACT) {
-    errors.push(`template.json: studio_contract 必须是 ${STUDIO_CONTRACT}（当前 ${JSON.stringify(tpl.studio_contract)}）`);
-  }
-  if (tpl.bridge !== BRIDGE_VERSION) {
-    errors.push(`template.json: bridge 必须是 ${BRIDGE_VERSION}（当前 ${JSON.stringify(tpl.bridge)}）`);
-  }
-  for (const [k, v] of Object.entries(LIMITS)) {
-    if (tpl.limits?.[k] !== v) errors.push(`template.json: limits.${k} 必须是 ${v}（当前 ${JSON.stringify(tpl.limits?.[k])}）`);
-  }
-  for (const p of ['web/', 'app.json', 'assets/']) {
-    if (!Array.isArray(tpl.tenant_paths) || !tpl.tenant_paths.includes(p)) {
-      errors.push(`template.json: tenant_paths 必须包含 "${p}"（租户面路径）`);
-    }
-  }
-}
-
 // app.json：白名单（防止构建参数、平台标识被加回来）
 const APP_KEYS = new Set(['name', 'short_name', 'tagline', 'color', 'icon', 'logo', 'crm', 'links']);
 const CRM_KEYS = new Set(['base', 'id']);
 const LINK_KEYS = new Set(['terms', 'privacy', 'support', 'website']);
 for (const k of Object.keys(app)) {
   if (!APP_KEYS.has(k)) {
-    errors.push(`app.json 不接受字段 "${k}"（包名放 app.lock.json，核心版本放 kit/kit.version，外观/业务入口见 clever-vpn-docs 的 app-json 契约）`);
+    errors.push(`app.json 不接受字段 "${k}"（包名放 app.lock.json，外观/业务入口见 clever-vpn-docs 的 app-json 契约）`);
   }
 }
 for (const [obj, keys, label] of [[app.crm, CRM_KEYS, 'crm'], [app.links, LINK_KEYS, 'links']]) {
@@ -100,19 +74,19 @@ if (typeof app.name === 'string' && app.name.length > 24) warnings.push(`app.jso
 if (typeof app.short_name === 'string' && app.short_name.length > 12) warnings.push(`app.json: short_name 建议 ≤ 12 字符（当前 ${app.short_name.length}）`);
 if (typeof app.tagline === 'string' && app.tagline.length > 24) warnings.push(`app.json: tagline 建议 ≤ 24 字符（当前 ${app.tagline.length}）`);
 
-/** 品牌素材路径：项目内相对路径，且只能在 assets/ 或 web/ 下 */
+/** 品牌素材路径：app/ 内相对路径，且只能在 assets/ 或 web/ 下 */
 function brandPath(value, field, fallback) {
   const p = typeof value === 'string' && value ? value : fallback;
   if (p.startsWith('/') || p.includes('\\') || p.split('/').some((s) => s === '..')) {
-    errors.push(`app.json: ${field} 必须是项目内相对路径（不得绝对路径 / .. / 仓库外）：${p}`);
+    errors.push(`app.json: ${field} 必须是 app/ 内相对路径（不得绝对路径 / .. / 仓库外）：${p}`);
     return null;
   }
   if (!p.startsWith('assets/') && !p.startsWith('web/')) {
-    errors.push(`app.json: ${field} 必须位于 assets/ 或 web/ 下：${p}`);
+    errors.push(`app.json: ${field} 必须位于 app/assets/ 或 app/web/ 下：${p}`);
     return null;
   }
-  if (!existsSync(join(ROOT, p))) {
-    errors.push(`app.json: ${field} 指向的文件不存在：${p}`);
+  if (!existsSync(join(APP, p))) {
+    errors.push(`app.json: ${field} 指向的文件不存在：app/${p}`);
     return null;
   }
   return p;
@@ -124,16 +98,16 @@ function pngInfo(buf) {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20), colorType: buf[25] };
 }
 
-// ── 图标（assets/icon.png 或 app.json.icon）──
+// ── 图标（app/assets/icon.png 或 app.json.icon）──
 const iconPath = brandPath(app.icon, 'icon', 'assets/icon.png');
 if (iconPath) {
-  const buf = readFileSync(iconPath);
+  const buf = readFileSync(join(APP, iconPath));
   const info = pngInfo(buf);
-  if (!info) errors.push(`${iconPath} 不是 PNG 文件`);
+  if (!info) errors.push(`app/${iconPath} 不是 PNG 文件`);
   else {
-    if (info.width !== 1024 || info.height !== 1024) errors.push(`${iconPath} 必须是 1024×1024（当前 ${info.width}×${info.height}）`);
-    if (info.colorType === 4 || info.colorType === 6) errors.push(`${iconPath} 必须无透明通道（App Store 会拒绝带 alpha 的图标）`);
-    if (buf.length > LIMITS.fileBytes) errors.push(`${iconPath} 不能超过 1MB（当前 ${(buf.length / 1024 / 1024).toFixed(2)}MB）`);
+    if (info.width !== 1024 || info.height !== 1024) errors.push(`app/${iconPath} 必须是 1024×1024（当前 ${info.width}×${info.height}）`);
+    if (info.colorType === 4 || info.colorType === 6) errors.push(`app/${iconPath} 必须无透明通道（App Store 会拒绝带 alpha 的图标）`);
+    if (buf.length > LIMITS.fileBytes) errors.push(`app/${iconPath} 不能超过 1MB（当前 ${(buf.length / 1024 / 1024).toFixed(2)}MB）`);
   }
 } else if (!RELEASE) {
   warnings.push('缺少可用图标：开发构建可以继续，正式出包会失败');
@@ -144,13 +118,13 @@ const logoPath = brandPath(app.logo, 'logo', iconPath || 'assets/icon.png');
 let logoUrl = '';
 if (logoPath) {
   const ext = extname(logoPath).toLowerCase();
-  const size = statSync(logoPath).size;
-  if (ext !== '.png' && ext !== '.svg') errors.push(`${logoPath}: logo 只收 PNG 或 SVG`);
-  if (size > 256 * 1024) errors.push(`${logoPath}: logo 不能超过 256KB（当前 ${(size / 1024).toFixed(0)}KB）`);
+  const size = statSync(join(APP, logoPath)).size;
+  if (ext !== '.png' && ext !== '.svg') errors.push(`app/${logoPath}: logo 只收 PNG 或 SVG`);
+  if (size > 256 * 1024) errors.push(`app/${logoPath}: logo 不能超过 256KB（当前 ${(size / 1024).toFixed(0)}KB）`);
   if (ext === '.png') {
-    const info = pngInfo(readFileSync(logoPath));
-    if (!info) errors.push(`${logoPath}: 不是合法的 PNG 文件`);
-    else if (info.width !== info.height) errors.push(`${logoPath}: PNG logo 必须是正方形（当前 ${info.width}×${info.height}）`);
+    const info = pngInfo(readFileSync(join(APP, logoPath)));
+    if (!info) errors.push(`app/${logoPath}: 不是合法的 PNG 文件`);
+    else if (info.width !== info.height) errors.push(`app/${logoPath}: PNG logo 必须是正方形（当前 ${info.width}×${info.height}）`);
   }
   // 产物内的相对 URL：web/ 下的文件原样，assets/ 下的拷到 web/_brand-logo.<ext>
   logoUrl = logoPath.startsWith('web/') ? logoPath.slice('web/'.length) : `_brand-logo${ext}`;
@@ -185,13 +159,13 @@ for (const k of ['generator', 'source_revision']) {
   if (lock[k] === undefined) warnings.push(`app.lock.json: 缺少 ${k}（Studio 生成的文件会带；手改无效）`);
 }
 
-const webEntry = join(ROOT, 'web', 'index.html');
-if (!existsSync(webEntry)) errors.push('缺少 web/index.html');
+const webEntry = join(APP, 'web', 'index.html');
+if (!existsSync(webEntry)) errors.push('缺少 app/web/index.html');
 
 // UI 必须自包含：不允许外链脚本/样式（离线也要能用）
 const html = existsSync(webEntry) ? readFileSync(webEntry, 'utf8') : '';
 const external = [...html.matchAll(/<(?:script|link)[^>]+(?:src|href)="(https?:\/\/[^"]+)"/g)].map((m) => m[1]);
-if (external.length) errors.push(`web/index.html 引用了外部资源（离线不可用）：${external.join(', ')}`);
+if (external.length) errors.push(`app/web/index.html 引用了外部资源（离线不可用）：${external.join(', ')}`);
 
 // ── crm.base / crm.id 构建期门禁（clients.md §7.1）──
 // 可达 + 已初始化 + 标识一致。不可达在 RELEASE 时阻塞（网络抖动不该红掉每个 PR）；
@@ -241,7 +215,7 @@ if (errors.length) {
   errors.forEach((e) => console.error('   - ' + e));
   process.exit(1);
 }
-ok('app.json / app.lock.json / template.json / 图标 / logo 校验通过');
+ok('app/app.json / app.lock.json / 图标 / logo 校验通过');
 
 if (CHECK_ONLY) { console.log('  ✓ check 模式：未生成产物'); process.exit(0); }
 
@@ -260,35 +234,38 @@ const brand = {
     website: app.links?.website || '',
   },
 };
-const brandJs = `/* 由 scripts/build.mjs 从 app.json 生成，请勿手改 */\nwindow.BRAND = ${JSON.stringify(brand, null, 2)};\n`;
+const brandJs = `/* 由 scripts/build.mjs 从 app/app.json 生成，请勿手改 */\nwindow.BRAND = ${JSON.stringify(brand, null, 2)};\n`;
 
 // 品牌标记：assets/ 下的文件拷一份到 web/（产物内相对 URL）；web/ 下的原样使用
 if (logoPath && logoPath.startsWith('assets/')) {
-  copyFileSync(join(ROOT, logoPath), join(ROOT, 'web', logoUrl));
-  ok(`拷贝 ${logoPath} → web/${logoUrl}`);
+  copyFileSync(join(APP, logoPath), join(APP, 'web', logoUrl));
+  ok(`拷贝 app/${logoPath} → app/web/${logoUrl}`);
 }
-writeFileSync(join(ROOT, 'web', '_brand.js'), brandJs);
-ok('生成 web/_brand.js');
+writeFileSync(join(APP, 'web', '_brand.js'), brandJs);
+ok('生成 app/web/_brand.js');
 
 // ── 产物 ──
 const dist = join(ROOT, 'dist');
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
-cpSync(join(ROOT, 'web'), join(dist, 'web'), { recursive: true });
+cpSync(join(APP, 'web'), join(dist, 'web'), { recursive: true });
 writeFileSync(join(dist, 'web', '_brand.js'), brandJs);
+// 图标唯一输入：各壳的 ci 脚本从 dist/icon.png 生成平台图标，不读 app.json
+if (iconPath) {
+  copyFileSync(join(APP, iconPath), join(dist, 'icon.png'));
+  ok('拷贝图标 → dist/icon.png');
+}
 
 const version = process.env.RELEASE_TAG || process.env.GITHUB_REF_NAME || 'dev';
 writeFileSync(join(dist, 'manifest.json'), JSON.stringify({
   name: brand.name,
   version,
-  kit_version: kitVersion,
   crm: brand.crm,
   bundle_id: lock.bundle_id,
   lock_version: lock.lock_version,
-  template: { package: tpl.package, studio_contract: tpl.studio_contract, bridge: tpl.bridge },
   source_revision: lock.source_revision ?? null,
   built_at: new Date().toISOString(),
 }, null, 2) + '\n');
 
-ok(`产物输出到 dist/（版本 ${version}，kit ${kitVersion}）`);
-console.log('\n下一步：在 shell-windows / shell-macos / shell-android 中把 dist/web 打进安装包。');
+ok(`产物输出到 dist/（版本 ${version}）`);
+console.log('\n下一步：在 shells/windows / shells/macos / shells/android 中把 dist/web 打进安装包。');

@@ -7,12 +7,12 @@
  *   node scripts/check-paths.mjs --base origin/main --head HEAD   # CI（fetch-depth: 0）
  *
  * 规则（decisions §1 / §6.3）：
- *   studio/design/<sha>   web/**、assets/**、app.json；**不得**改 crm.*
- *   studio/config/<sha>   仅 app.json（可以改 crm.*）
+ *   studio/design/<sha>   app/web/**、app/assets/**、app/app.json；**不得**改 crm.*
+ *   studio/config/<sha>   仅 app/app.json（可以改 crm.*）
  *   studio/onboard/<sha>  design 的路径 + app.lock.json（首次接入）
  *   其它分支             人工/上游分支：只提示、不拦截（上游自己要改 scripts/、.github/）
  *
- * 任何 studio 分支都不得改：shell-xxx/、kit/、scripts/、.github/、docs/、README.md、LICENSE、template.json。
+ * 任何 studio 分支都不得改：shells/、scripts/、.github/、docs/、README.md、LICENSE。
  * 退出码：0 = 通过，1 = 越界，2 = 用法/环境错误。
  */
 import { execFileSync } from 'node:child_process';
@@ -47,20 +47,18 @@ const prefix = branch.startsWith('studio/design/') ? 'design'
       : 'other';
 
 const FORBIDDEN = [
-  [/^shell-[^/]+\//, 'shell-*/ 属于上游壳'],
-  [/^kit\//, 'kit/ 属于平台'],
+  [/^shells\//, 'shells/ 属于上游壳'],
   [/^scripts\//, 'scripts/ 属于上游'],
   [/^\.github\//, '.github/ 属于上游'],
   [/^docs\//, 'docs/ 属于上游'],
   [/^README\.md$/, 'README.md 属于上游'],
   [/^LICENSE$/, 'LICENSE 属于上游'],
-  [/^template\.json$/, 'template.json 属于平台'],
 ];
 
 const ALLOW = {
-  design: [/^web\//, /^assets\//, /^app\.json$/],
-  config: [/^app\.json$/],
-  onboard: [/^web\//, /^assets\//, /^app\.json$/, /^app\.lock\.json$/],
+  design: [/^app\/web\//, /^app\/assets\//, /^app\/app\.json$/],
+  config: [/^app\/app\.json$/],
+  onboard: [/^app\/web\//, /^app\/assets\//, /^app\/app\.json$/, /^app\.lock\.json$/],
 };
 
 let changes;
@@ -98,7 +96,7 @@ for (const c of changes) {
     violations.push({ path: c.path, rule: 'outside', message: `${branch} 分支不允许改这个路径` });
     continue;
   }
-  if (c.path === 'app.json' && c.status === 'D') {
+  if (c.path === 'app/app.json' && c.status === 'D') {
     violations.push({ path: c.path, rule: 'required', message: 'app.json 不可删除（App 的品牌与业务入口）' });
   }
 }
@@ -106,7 +104,7 @@ for (const c of changes) {
 // 设计分支不得改 crm.*：它决定登录与收款去向
 if (prefix === 'design') {
   const readApp = (ref) => {
-    try { return JSON.parse(git(['show', `${ref}:app.json`])); } catch { return null; }
+    try { return JSON.parse(git(['show', `${ref}:app/app.json`])); } catch { return null; }
   };
   const before = readApp(baseRef);
   const after = readApp(HEAD);
@@ -115,7 +113,7 @@ if (prefix === 'design') {
     const b = JSON.stringify(after.crm ?? {});
     if (a !== b) {
       violations.push({
-        path: 'app.json',
+        path: 'app/app.json',
         rule: 'crm-locked',
         message: `studio/design/* 不得修改 crm.*（${a} → ${b}）；要改业务入口请走 studio/config/*`,
       });

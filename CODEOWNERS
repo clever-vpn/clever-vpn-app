@@ -1,13 +1,9 @@
-# 目录所有权：租户/贡献者可自由改 app.json、assets/icon.png 与 web/；
-# 壳与核心获取脚本需维护者审核。
+# 目录所有权：租户/贡献者可自由改 app/（app.json、assets/、web/）；
+# 壳（shells/）与 kit 版本矩阵需维护者审核。
 *                       @clever-vpn
-web/                    @clever-vpn
-app.json                @clever-vpn
-assets/                 @clever-vpn
+app/                    @clever-vpn
+app.lock.json           @clever-vpn
 docs/                   @clever-vpn
-shell-windows/          @clever-vpn
-shell-macos/            @clever-vpn
-shell-android/          @clever-vpn
-kit/                    @clever-vpn
+shells/                 @clever-vpn
 scripts/                @clever-vpn
 .github/                @clever-vpn

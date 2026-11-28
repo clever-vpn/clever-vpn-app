@@ -1,11 +1,30 @@
-import { FAKE_SHELL } from './fake-shell.mjs';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Playwright 的角色：
- *   · 假壳（bridge@2 的完整实现）→ 断言 UI 与壳的交互
+ *   · 模拟壳（shells/mock/bridge.js，与 Studio 预览同一份）→ 断言 UI 与壳的交互
  *   · 假 CRM（同一套 /api/app/v1 端点与信封）→ 断言 UI 只渲染服务端字段
  *   · 品牌注入（拦截 _brand.js）→ 断言"只改 app.json 就能换品牌"
  */
+
+/** 模拟壳的源码：CI 从仓库读，不经过网络 */
+const MOCK_SHELL = readFileSync(fileURLToPath(new URL('../shells/mock/bridge.js', import.meta.url)), 'utf8');
+
+/** 冒烟用的壳配置：默认未激活（页面自己调 activate），连接正常 */
+export const MOCK_SHELL_CONFIG = {
+  shell: true,
+  platform: 'windows',
+  store: null,
+  connect: 'ok',
+  activated: false,
+  lines: 'normal',
+  traffic: true,
+  protocol: 'auto',
+};
+
+/** 必须中性的错误文案（BRIDGE.md §3：FROZEN 不得对用户定性） */
+export const FROZEN_BANNED = /违规|封禁|作弊|滥用|违反/;
 
 const PORT = Number(process.env.PORT || 8123);
 export const ORIGIN = `http://127.0.0.1:${PORT}`;
@@ -362,7 +381,8 @@ export async function openPage(page, path, opts = {}) {
     if (r.status() >= 400 && u.startsWith(ORIGIN)) errors.push(`http ${r.status()} ${u}`);
   });
 
-  await page.addInitScript(FAKE_SHELL);
+  await page.addInitScript((cfg) => { window.__MOCK_SHELL_CONFIG = cfg; }, MOCK_SHELL_CONFIG);
+  await page.addInitScript(MOCK_SHELL);
   if (opts.auth !== false) {
     // 只种一次：登出后应用会清 token，后续导航不能再被测试塞回去
     await page.addInitScript(() => {

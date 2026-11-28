@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 仅供端到端冒烟使用：把 web/ 当静态目录伺服。
+ * 仅供端到端冒烟使用：把 app/web/ 当静态目录伺服。
  *
  * 为什么不用现成静态服务器：不想为了一个测试给租户再装一个依赖。
  * 与真实壳的唯一差别：真壳读内置资源目录，这里走 HTTP。
@@ -10,7 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const WEB = fileURLToPath(new URL('../web', import.meta.url));
+const WEB = fileURLToPath(new URL('../app/web', import.meta.url));
 const PORT = Number(process.env.PORT || 8123);
 const HOST = '127.0.0.1';
 
@@ -33,7 +33,7 @@ createServer(async (req, res) => {
     if (path === '/' || path === '') path = '/index.html';
 
     const abs = join(WEB, path);
-    // 目录穿越防线：解析后必须仍在 web/ 之内
+    // 目录穿越防线：解析后必须仍在 app/web/ 之内
     if (abs !== WEB && !abs.startsWith(WEB + sep)) {
       res.writeHead(403, { 'content-type': 'text/plain' }).end('forbidden');
       return;

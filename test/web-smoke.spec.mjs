@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { FROZEN_BANNED } from './fake-shell.mjs';
-import { openPage, createScenario, mockCrm, useBrand, BRAND, BRAND_ALT } from './harness.mjs';
+import { FROZEN_BANNED, openPage, createScenario, mockCrm, useBrand, BRAND, BRAND_ALT } from './harness.mjs';
 
 /**
  * web/ 的行为门禁：假壳 + 假 CRM + 真 Chromium。
@@ -363,6 +362,8 @@ test('切换类控件有 role=radio + aria-checked', async ({ page }) => {
   for (const path of ['/lines.html', '/settings.html', '/region.html']) {
     await openPage(page, path, { scenario: createScenario({}) });
     const radios = page.locator('[role="radio"]');
+    // 线路列表是异步拉的（refresh 有 300ms），先等第一条单选出现再数
+    await expect(radios.first()).toBeVisible();
     const n = await radios.count();
     expect(n, `${path} 没有单选控件`).toBeGreaterThan(0);
     for (let i = 0; i < n; i += 1) {

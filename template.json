@@ -1,7 +1,0 @@
-{
-  "package": 1,
-  "studio_contract": 4,
-  "bridge": 3,
-  "limits": { "fileBytes": 1000000, "totalBytes": 8000000, "files": 200, "depth": 3 },
-  "tenant_paths": ["web/", "app.json", "assets/"]
-}

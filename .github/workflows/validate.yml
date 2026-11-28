@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - name: 校验 app.json / app.lock.json / template.json / 图标 / logo
+      - name: 校验 app/app.json / app.lock.json / 图标 / logo
         run: node scripts/build.mjs --check
       - name: 闸门与构建脚本自检（纯函数 fixtures）
         run: node --test "test/*.test.mjs"

@@ -177,11 +177,13 @@ bridge.on('state', (snapshot) => { /* 与 state() 结构一致 */ });
 
 ## 7. 参考实现
 
-`web/bridge.js` 在没有壳时提供一个同形 mock：
+仓库里有两份实现，职责不同，不要混：
 
-- **浏览器里没有壳时**（本地开发、Studio 预览、Playwright 假壳缺席）自动启用；
-- 行为与真壳同形（含 `state()`、`on('state')`、连接耗时、线路列表、协议/分流落盘）；
-- 不是第二份真相：真壳注入的 `window.bridge` 存在时，mock 一个字段都不覆盖；
-- mock **不实现** `crmRequest` ⇒ 浏览器/预览自动回退 `fetch`（与真壳同形的特性检测）。
+| 文件 | 是什么 | 谁用 |
+|---|---|---|
+| `app/web/bridge.js` | **最小 fallback**：没有壳时让页面能用（连接、线路、协议/分流） | 浏览器直开、旧壳缺席；随产物发布，租户可改 |
+| `shells/mock/bridge.js` | **模拟壳**：完整 bridge@3（含错误码、慢网/断网/空线路/流量、`crmRequest`） | Studio 预览与 CI 冒烟共用同一份 |
 
-假壳（`test/fake-shell.mjs`）是测试用的第三个实现，只用于 CI 断言“UI 真的按契约走”。
+- 两者都不覆盖真壳：真壳注入的 `window.bridge` 存在时，文件里的 mock 一个字段都不动（`app/web/bridge.js` 第一行就 return）。
+- 模拟壳的输入是 `window.__MOCK_SCENARIO`（`expired` / `frozen` / `device_limit` / `net_down` / `slow` / `anon` / `active`）或 `window.__MOCK_SHELL_CONFIG`（更细的面板配置），由调用方在页面脚本之前注入；没有输入时就是「正常的壳」。
+- `test/mock-shell.test.mjs` 把模拟壳的方法集合钉死在 `BRIDGE_METHODS` 上：少一个方法、多一个方法都会红。

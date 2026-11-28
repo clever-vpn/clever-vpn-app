@@ -3,14 +3,14 @@
 Last updated: 2026-11-26
 Status: 生效（评审时按「必须」逐条卡；「推荐」仅供样板参考）
 
-> 本文是 **clever-vpn-app 自己的设计文档**。跨仓库的写权限、`app.json` 字段语义、
+> 本文是 **clever-vpn-app 自己的设计文档**。跨仓库的写权限、`app/app.json` 字段语义、
 > `bridge` 契约分别在 `clever-vpn-docs/docs/contracts/`，改那些要先动 docs 仓库。
 
 ## 0. 两种定制，一条边界
 
 | | 初级定制（不用 Studio） | 高级定制（Studio） |
 |---|---|---|
-| 租户改什么 | `app.json` + `assets/` | `web/` 里的 HTML/CSS/JS |
+| 租户改什么 | `app/app.json` + `app/assets/` | `app/web/` 里的 HTML/CSS/JS |
 | 能改变 | 名字、副标题、主色、CRM 连接、链接、图标/标记 | 布局、文案、组件、增删页面 |
 | 门槛 | 改文件 → 构建 | 对话 / 工具 |
 
@@ -21,10 +21,10 @@ Status: 生效（评审时按「必须」逐条卡；「推荐」仅供样板参
 
 | # | 规则 | 破了会怎样 |
 |---|---|---|
-| M1 | 品牌值（名字/副标题/主色/链接/标记）从 `window.BRAND` 取，不写死在页面里 | `app.json.color` 同时决定图标、托盘、商店素材；写死了就是"图标紫色、界面蓝色" |
+| M1 | 品牌值（名字/副标题/主色/链接/标记）从 `window.BRAND` 取，不写死在页面里 | `app/app.json.color` 同时决定图标、托盘、商店素材；写死了就是"图标紫色、界面蓝色" |
 | M2 | 不引用任何外部资源（CDN / 字体 / 远程图片 / 第三方脚本） | 离线崩；三端 WebView 还可能白屏 |
 | M3 | 只通过 `bridge@3` 与壳交互：`capabilities activate deactivate lines setLine connect disconnect state settings setProtocol setSplit open crmRequest on` | 碰 kit 内部接口，换壳即废 |
-| M4 | 守住 `web/` 限制：单文件 1 MB / 总量 8 MB / 200 文件 / 深度 3 | CI 直接红，出不了包 |
+| M4 | 守住 `app/web/` 限制：单文件 1 MB / 总量 8 MB / 200 文件 / 深度 3 | CI 直接红，出不了包 |
 | M5 | 任何页面都要有回退路径 | 用户卡死，只能杀进程 |
 | M6 | 触控热区 ≥ 44×44（开关这类小控件让整行可点） | 不是审美，是手指尺寸 |
 | M7 | 外链（`links.*`、客服、官网、**第三方支付页**）用 `bridge.open(url)` 打开；壳没这个能力时退回 `target="_blank" rel="noopener"`。内部页面之间照常用相对链接 | 在 WebView 里加载第三方页面 = 没有地址栏、退不回来，桥和我们的 UI 一起被顶掉 |
@@ -60,7 +60,7 @@ Status: 生效（评审时按「必须」逐条卡；「推荐」仅供样板参
 ## 4. 变量分两类
 
 ```
-租户可改（app.json / app.css 顶部）
+租户可改（app/app.json / app.css 顶部）
   --brand --bg --surface --text --dim --radius --gap --font
 
 我们固定（设计系统）
@@ -118,7 +118,7 @@ Status: 生效（评审时按「必须」逐条卡；「推荐」仅供样板参
 **凡进入官方模板的东西，必须只依赖 `window.BRAND` + `bridge@3` + `clients` 契约的端点。**
 不满足的不合入。
 
-理由：官方模板必须是"任何人 fork 后只改 `app.json` 就能上线"的状态，否则
+理由：官方模板必须是"任何人 fork 后只改 `app/app.json` 就能上线"的状态，否则
 「租户做模板 → 别人再基于它做品牌」这条路无从开始（本仓库 MIT，允许再分发）。
 
 ## 6. 欢迎页规格（供应商更换标识的主战场）
@@ -135,8 +135,8 @@ Status: 生效（评审时按「必须」逐条卡；「推荐」仅供样板参
 
 1. **三段式**（标记 / 名称+副标题 / 操作），块与块之间必须靠留白分开。
 2. 标记**不能贴顶**：中段在剥去头尾后的剩余空间里垂直居中。
-3. 每一个来自 `app.json` 的值都必须**能空**：副标题空 → 不留空洞；`support`/`website` 空 → 整块不出现。
-4. 页面里不写死任何品牌字。换一家租户，只改 `app.json` 这一屏就整张变。
+3. 每一个来自 `app/app.json` 的值都必须**能空**：副标题空 → 不留空洞；`support`/`website` 空 → 整块不出现。
+4. 页面里不写死任何品牌字。换一家租户，只改 `app/app.json` 这一屏就整张变。
 5. 外链显式走 `bridge.open(url)`（M7），不要在页面里用 `location.href`。
 6. 垂直节奏：标记起点落在屏高 1/6 附近；不要用 `100dvh` 绝对居中。
 
