@@ -33,6 +33,11 @@ on:
         description: '发布 tag（如 v1.0.0）。留空则自动 bump 最新 release 的 patch+1'
         required: false
         default: ''
+      dry_run:
+        description: '只构建、不建 tag/release（用来在分支上验证产物）'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -238,6 +243,7 @@ jobs:
     needs: [plan, web, android, apple, windows]
     if: |
       always() &&
+      inputs.dry_run != true &&
       needs.plan.result == 'success' &&
       needs.web.result == 'success' &&
       contains(fromJSON('["success","skipped"]'), needs.android.result) &&
