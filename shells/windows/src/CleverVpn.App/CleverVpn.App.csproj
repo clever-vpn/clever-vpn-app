@@ -12,6 +12,8 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <WindowsPackageType>None</WindowsPackageType>
     <UseWinUI>true</UseWinUI>
+    <!-- WinUI + dotnet build 需要它才能找到 MSIX/PRI 工具链（WindowsAppSDK 1.1+ 的官方修法） -->
+    <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- 自己要先判断 Service.Run()（服务模式），所以关掉 XAML 生成的 Main -->

@@ -63,12 +63,23 @@ if ($LASTEXITCODE -ne 0) { throw '单元测试失败' }
 $publishDir = Join-Path $WindowsDir 'src/CleverVpn.App/bin/publish'
 if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
 
-# WinUI 的 PRI 生成任务（ExpandPriContent）只在 Visual Studio 的 MSBuild 扩展里，
-# dotnet SDK 8.0.4xx 起不再自带 ⇒ 从 VS2022 目录找出来，用 AppxMSBuildToolsPath 指过去。
-$appxTasks = Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio\2022\*\MSBuild\Microsoft\VisualStudio\v17.0\AppxPackage" `
-  -Filter 'Microsoft.Build.Packaging.Pri.Tasks.dll' -ErrorAction SilentlyContinue | Select-Object -First 1
-if (-not $appxTasks) { throw '找不到 Microsoft.Build.Packaging.Pri.Tasks.dll（需要 VS2022 的 UWP/Windows App SDK 工作负载）' }
-Write-Host "→ PRI 任务：$($appxTasks.DirectoryName)"
+# WinUI 的 PRI 生成任务（ExpandPriContent）由 EnableMsixTooling 解析；如果机器上有 VS，
+# 顺手把它的 AppxPackage 目录显式指过去（dotnet SDK 8.0.4xx 起不再自带这个任务）。
+$vsRoots = @($env:ProgramFiles, ${env:ProgramFiles(x86)}) | Where-Object { $_ -and (Test-Path $_) }
+$appxTasks = foreach ($root in $vsRoots) {
+  $vs = Join-Path $root 'Microsoft Visual Studio'
+  if (Test-Path $vs) {
+    Get-ChildItem $vs -Recurse -Filter 'Microsoft.Build.Packaging.Pri.Tasks.dll' -ErrorAction SilentlyContinue
+  }
+} | Select-Object -First 1
+
+$extra = @()
+if ($appxTasks) {
+  Write-Host "→ PRI 任务：$($appxTasks.DirectoryName)"
+  $extra += "-p:AppxMSBuildToolsPath=$($appxTasks.DirectoryName)"
+} else {
+  Write-Host "⚠ 没找到 VS 的 PRI 任务，交给 EnableMsixTooling 自己解析"
+}
 
 $publishArgs = @(
   'publish', $AppProject,
@@ -79,10 +90,9 @@ $publishArgs = @(
   "-p:Version=$version",
   "-p:FileVersion=$version.0",
   "-p:AssemblyVersion=$version.0",
-  "-p:AppxMSBuildToolsPath=$($appxTasks.DirectoryName)",
   '-o', $publishDir,
   '--nologo'
-)
+) + $extra
 & dotnet @publishArgs
 if ($LASTEXITCODE -ne 0) { throw 'dotnet publish 失败' }
 
