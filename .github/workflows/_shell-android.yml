@@ -1,4 +1,4 @@
-# Android 壳：可被 release.yml 调用（workflow_call），也可单独 dispatch / 分支 push 验证。
+# Android 壳：可被 app-release.yml 调用（workflow_call），也可单独 dispatch / 分支 push 验证。
 # 有 keystore secrets 时签名；没有就出未签名包（只用于构建/功能验收）。
 name: shell-android
 

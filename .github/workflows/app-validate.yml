@@ -1,0 +1,111 @@
+# 租户 App 设计/构建门禁：只对 studio/build/* 分支 dispatch。
+# job 名保持 validate / web-contract / web-smoke / path-whitelist，供 Studio 轮询与分支保护使用。
+name: app-validate
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'path-whitelist 的基线分支（默认 main）'
+        required: false
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 只允许 studio/build/* 分支
+        if: ${{ !startsWith(github.ref, 'refs/heads/studio/build/') }}
+        run: |
+          echo "::error::app-validate 只接受 refs/heads/studio/build/*（当前 ${{ github.ref }}）"
+          exit 1
+
+  validate:
+    needs: guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: 校验 app/app.json / app.lock.json / 图标 / logo
+        run: node scripts/build.mjs --check
+      - name: 闸门与构建脚本自检（纯函数 fixtures）
+        run: node --test "test/*.test.mjs"
+
+  web-contract:
+    name: web-contract
+    needs: guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: 校验 web/ 契约（与 studio 的 check_draft 同一份实现）
+        run: node scripts/check-web.mjs --report web-contract-report.json
+      - name: 上传报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-contract-report
+          path: web-contract-report.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  path-whitelist:
+    name: path-whitelist
+    needs: guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: 按 ref 校验允许路径
+        env:
+          BASE: ${{ inputs.base }}
+        run: node scripts/check-paths.mjs --base "origin/$BASE" --head HEAD
+
+  web-smoke:
+    name: web-smoke
+    needs: guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: 安装测试依赖
+        run: npm ci
+      - name: 生成 web/_brand.js 与品牌标记（构建产物，不入库）
+        run: node scripts/build.mjs
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: 安装 Chromium
+        run: npx playwright install --with-deps chromium
+      - name: 行为冒烟（假壳 + 真实 Chromium，10 页 × 视口 × 主题 + 品牌替换）
+        run: npx playwright test
+      - name: 上传报告与截图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-smoke-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

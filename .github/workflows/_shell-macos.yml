@@ -1,4 +1,4 @@
-# macOS 壳：可被 release.yml 调用（workflow_call），也可单独 dispatch 做构建验收。
+# macOS 壳：可被 app-release.yml 调用（workflow_call），也可单独 dispatch 做构建验收。
 #
 # - workflow_call：用发布流程产出的 web-dist
 # - workflow_dispatch：自己先跑 node scripts/build.mjs

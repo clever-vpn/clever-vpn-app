@@ -9,7 +9,7 @@
  *
  * 退出码：0 = 通过（允许 warn），1 = 有违规，2 = 用法/环境错误。
  *
- * 定位：CI 门禁（validate.yml 的 web-contract job）。这里只做**静态**判定；
+ * 定位：CI 门禁（app-validate.yml / template-validate.yml 的 web-contract job）。这里只做**静态**判定；
  * 运行时行为（点击流、console、截图）由 web-smoke（Playwright）判定。
  *
  * 租户面在 app/ 下，但闸门的逻辑根仍是 `web/…`：这里收集时剥掉 `app/` 前缀，
@@ -79,7 +79,7 @@ if (result.violations.length) {
     console.log(`  ${v.path}${v.line ? `:${v.line}` : ''}  [${v.id}] ${v.message}`);
   }
 }
-console.log('\n  · runtime.console-clean / 点击流：由 web-smoke（Playwright）判定，见 validate.yml');
+console.log('\n  · runtime.console-clean / 点击流：由 web-smoke（Playwright）判定，见 app-validate.yml / template-validate.yml');
 console.log(result.ok ? '\n✓ 通过\n' : `\n✗ 未通过（${result.violations.length} 处）\n`);
 
 if (reportPath) {

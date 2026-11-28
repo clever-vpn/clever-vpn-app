@@ -12,9 +12,9 @@
 >
 > **保证边界**：我们只保证缺省配置（只改 `app/` 下本文允许的文件）下的构建与
 > 发布正确；改 `shells/`、`scripts/` 就要自己维护。
-> **发布只走 GitHub Actions**，不要在本地 build 后手工上传当正式发布。
+> **发布只走 GitHub Actions（`app-release`，build 分支）**，不要在本地 build 后手工上传当正式发布。
 
-## 零、拿到仓库之后第一件事：把门禁打开
+## 零、只有在你自己维护仓库时：把门禁打开
 
 > **GitHub 的 fork 不继承任何分支保护设置。** 你拿到的仓库，`main` 默认是完全
 > 无保护的：CI 红了照样能合并，甚至能直接 `git push origin main`。
@@ -23,7 +23,7 @@
 1. 仓库页 → **Settings** → **Rules** → **Rulesets** → **New branch ruleset**
 2. Name 填 `protect-main`，Enforcement 选 **Active**，Target 选 **Include default branch**
 3. 勾下面两项后 **Create**：
-   - **Require status checks to pass** → 添加 `validate`、`web-contract`、`web-smoke`、`path-whitelist`
+   - **Require status checks to pass** → 添加 `validate`、`web-contract`、`web-smoke`、`path-whitelist`（这些 job 名仍用于 build 分支）
    - **Block force pushes**
 
 说明：
@@ -50,19 +50,18 @@
    **不用先自己 Fork**：Studio 会先找有没有本模板的 fork，有就复用，没有就替你建一个
    （建在你刚授权的账号下），并替你打开自动检查。
 2. 回 CRM → **应用** → 〔打开设计器〕→ 进入 `/edit/<draft>`
-3. 在设计器里改完 → **发布**：Studio 只负责开 PR（`studio/design|config|onboard/*`），
-   合并在你自己的仓库里点
+3. 在设计器里改完 → **发布**：Studio 写 `studio/app`，发布时生成 `studio/build/<content_sha>` 并打 `v*` tag；
+   租户不需要开 PR、合并或点 GitHub。
 
 约束（Studio 的围栏，也是 `path-whitelist` job 判的）：
 
 | 分支前缀 | 可以改 |
 |---|---|
-| `studio/design/*` | `app/web/**`、`app/assets/**`、`app/app.json`（**`crm.*` 不可改**） |
-| `studio/config/*` | 仅 `app/app.json`（可以改 `crm.*`） |
-| `studio/onboard/*` | 以上 + `app.lock.json`（首次接入） |
-| 任何 PR | ❌ `shells/`、`scripts/`、`.github/`、`docs/` |
+| `studio/app` | `app/web/**`、`app/assets/**`、`app/app.json`、`app.lock.json`（Studio 唯一写入） |
+| `studio/build/*` | 相对 `main` 只允许 `app/**` + `app.lock.json` |
+| 任何 studio 分支 | ❌ `shells/`、`scripts/`、`.github/`、`docs/` |
 
-> Studio 会确保仓库存在（复用你的 fork，或建一个新的），发布在四道检查全绿后由它合并并打版本；
+> Studio 会确保仓库存在（复用你的 fork，或建一个新的），发布在 build 分支四道检查全绿后打 `v*` tag；
 > 它**不会删除或转移**你的仓库，也不会碰 `shells/`、`scripts/`。仓库始终是你的。
 > **人机校验（Turnstile）与 App 无关**：模板永远不加载第三方脚本。
 
@@ -162,7 +161,7 @@ node --test "test/*.test.mjs"      # 闸门与构建脚本自检
 npx playwright test                # 10 页点击流 + 三档视口 × 深浅主题截图
 ```
 
-CI 的 `validate` / `web-contract` / `web-smoke` / `path-whitelist` 必须全绿。规则来自
+build 分支的 `validate` / `web-contract` / `web-smoke` / `path-whitelist` 必须全绿。规则来自
 `clever-vpn-docs` 的 `contracts/shared/app-studio-app.md` §4：
 
 | 检查 ID | 规则 |
@@ -221,7 +220,7 @@ dist/
 ```
 
 平台安装包由 `shells/` 的构建产出（Windows `msi`、macOS `dmg`、Android `apk`/`aab`），
-**由 GitHub Actions 生成并在 Release 里提供下载**：Actions → `release` → Run workflow，
+**由 GitHub Actions 生成并在 Release 里提供下载**：Actions → `app-release` → Run workflow，
 `platform` 选 `android` / `apple` / `windows`（`all` = 所有已实现的平台）。
 壳落地前选这三项会**直接失败并告诉你缺什么**（不会建出没有资产的 release），
 现阶段只有 `web` 能出包。细节见 [`RELEASE.md`](RELEASE.md)。

@@ -1,5 +1,5 @@
 <#
-  Windows 壳的构建入口（release.yml / _shell-windows.yml 调用；本地也可直接跑）。
+  Windows 壳的构建入口（app-release.yml / _shell-windows.yml 调用；本地也可直接跑）。
 
   输入：
     - 仓库根的 dist/（web/ + manifest.json + icon.png）—— 先跑 node scripts/build.mjs

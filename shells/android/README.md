@@ -30,4 +30,4 @@ gradle -PkitVersion=2.1.8 -PappId=com.example.nextvpn -PappName="Next VPN" \
 - 包名：`dist/manifest.json` 的 `bundle_id.android`。
 - 签名 secrets：`ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、
   `ANDROID_KEY_PASSWORD`；没有就出未签名包（只做构建/功能验收）。
-- CI：`.github/workflows/_shell-android.yml`（`release.yml` 调用，也可单独 dispatch）。
+- CI：`.github/workflows/_shell-android.yml`（`app-release.yml` 调用，也可单独 dispatch）。

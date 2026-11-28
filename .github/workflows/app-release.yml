@@ -1,10 +1,11 @@
-# 发布：手选平台出包（web / android / apple / windows）→ 统一建 tag + release
+# App 发布：手选平台出包（web / android / apple / windows）→ 在 build commit 上建 v* tag + Release
 #
-# 输入（Actions → release → Run workflow）：
+# 只允许 studio/build/* 分支；租户发布 tag 为 vX.Y.Z。
+# 输入（Actions → app-release → Run workflow）：
 #   platform  all = 构建所有「已实现」的平台（未实现的告警并跳过）；
 #             web / android / apple / windows = 只构建该平台，
 #             显式选了尚未实现的平台会直接失败（不产出半成品 release）。
-#   tag       留空 = 在最新 release 上 patch+1；统一 v 前缀。
+#   tag       留空 = 在最新租户 v* tag 上 patch+1；统一 v 前缀；template-v* 不参与。
 #
 # 原生壳的构建入口是各目录下的 ci 脚本（壳落地时补上，契约见 docs/RELEASE.md）：
 #   shells/android/ci/build.sh   → 产物写入 shells/android/ci/out/
@@ -13,7 +14,7 @@
 #
 # kit 版本不在这条工作流里：各壳的 ci 脚本自己读 shells/versions.json。
 # 与 clever-vpn-cf-api 的发布口径保持一致：统一 v 前缀，成功后创建 tag 与 release。
-name: release
+name: app-release
 
 on:
   workflow_dispatch:
@@ -44,12 +45,22 @@ permissions:
 
 # 两次发布同时跑会抢同一个 tag（自动 bump 会算成同一个版本），串行化
 concurrency:
-  group: release
+  group: app-release
   cancel-in-progress: false
 
 jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 只允许 studio/build/* 分支
+        if: ${{ !startsWith(github.ref, 'refs/heads/studio/build/') }}
+        run: |
+          echo "::error::app-release 只接受 refs/heads/studio/build/*（当前 ${{ github.ref }}）"
+          exit 1
+
   # 解析 tag + 判断哪些平台真的能构建（壳的 ci 入口存在）
   plan:
+    needs: guard
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.resolve.outputs.release_tag }}
@@ -65,26 +76,28 @@ jobs:
       - name: 解析 tag
         id: resolve
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
+          # 只认租户发布 tag：vMAJOR.MINOR.PATCH；template-v* 是上游模板版本，必须忽略
+          LATEST=$(git tag -l 'v*' | sed 's/^v//' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
           if [ -n "${INPUT_TAG}" ]; then
-            TAG="v${INPUT_TAG#v}"
-            echo "使用指定 tag: $TAG"
-          else
-            LATEST=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' || true)
-            if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
-              TAG="v0.1.0"
-              echo "无历史 release，使用 $TAG"
-            else
-              BASE="${LATEST#v}"; MAJOR="${BASE%%.*}"; REST="${BASE#*.}"; MINOR="${REST%%.*}"; PATCH="${REST#*.}"
-              TAG="v${MAJOR}.${MINOR}.$((PATCH + 1))"
-              echo "自动 bump: $LATEST -> $TAG"
+            BASE="${INPUT_TAG#v}"
+            if ! [[ "$BASE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::tag 必须是 vX.Y.Z（收到 $INPUT_TAG）"; exit 1
             fi
+            TAG="v${BASE}"
+            echo "使用指定 tag: $TAG"
+          elif [ -z "$LATEST" ]; then
+            TAG="v0.1.0"
+            echo "无历史租户 tag，使用 $TAG"
+          else
+            MAJOR="${LATEST%%.*}"; REST="${LATEST#*.}"; MINOR="${REST%%.*}"; PATCH="${REST#*.}"
+            TAG="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+            echo "自动 bump: v${LATEST} -> $TAG"
           fi
           if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "::warning::tag $TAG 已存在，将复用"
+            echo "::warning::tag $TAG 已存在；release 会校验它是否指向本次 build commit"
           fi
           echo "release_tag=$TAG" >> "$GITHUB_OUTPUT"
 
@@ -256,15 +269,28 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ needs.plan.outputs.tag }}"
+          HEAD_SHA="$(git rev-parse HEAD)"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "$TAG" || true
-          git push origin "$TAG" || true
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            EXISTING="$(git rev-parse "$TAG^{}")"
+            if [ "$EXISTING" != "$HEAD_SHA" ]; then
+              echo "::error::tag $TAG 已指向 $EXISTING，不是本次 build commit $HEAD_SHA；拒绝移动发布 tag"
+              exit 1
+            fi
+            echo "tag $TAG 已存在且指向本次 build commit，复用"
+          else
+            git tag -a "$TAG" -m "$TAG"
+            git push origin "$TAG"
+          fi
           shopt -s nullglob
           ASSETS=(out/*)
           echo "资产：${ASSETS[*]}"
-          gh release create "$TAG" \
-            --title "$TAG" \
-            --generate-notes \
-            "${ASSETS[@]}" \
-          || gh release upload "$TAG" "${ASSETS[@]}" --clobber
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${ASSETS[@]}" --clobber
+          else
+            gh release create "$TAG" --verify-tag \
+              --title "$TAG" \
+              --generate-notes \
+              "${ASSETS[@]}"
+          fi
