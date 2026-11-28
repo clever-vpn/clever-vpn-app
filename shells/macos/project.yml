@@ -1,0 +1,82 @@
+# XcodeGen 工程定义（不提交 .xcodeproj；ci/build.sh 先替换 __KIT_VERSION__ 再生成）。
+# 品牌/包名/团队/证书都在 ci/generated.xcconfig 里（由 dist/manifest.json + secrets 生成）。
+name: CleverVpn
+options:
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "Developer ID Application"
+    DEVELOPMENT_TEAM: $(APPLE_TEAM_ID)
+    MARKETING_VERSION: $(APP_VERSION)
+    CURRENT_PROJECT_VERSION: $(APP_BUILD)
+    ENABLE_HARDENED_RUNTIME: YES
+
+packages:
+  CleverVpnKit:
+    url: https://github.com/clever-vpn/clever-vpn-kit
+    exactVersion: __KIT_VERSION__
+  CleverVpnShellCore:
+    path: Core
+
+targets:
+  CleverVpn:
+    type: application
+    platform: macOS
+    sources:
+      - path: CleverVpn
+        excludes:
+          - "Info.plist"
+          - "*.entitlements"
+          - "Resources"
+      - path: CleverVpn/Resources/web
+        type: folder
+      - path: CleverVpn/Resources/manifest.json
+      - path: CleverVpn/Resources/AppIcon.icns
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        INFOPLIST_FILE: CleverVpn/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CleverVpn/CleverVpn.entitlements
+        PROVISIONING_PROFILE_SPECIFIER: $(APP_PROFILE)
+      configFiles:
+        Release: ci/generated.xcconfig
+    dependencies:
+      - package: CleverVpnKit
+      - package: CleverVpnShellCore
+      - target: CleverVpnExtension
+        embed: true
+
+  CleverVpnExtension:
+    type: system-extension
+    platform: macOS
+    sources:
+      - path: CleverVpnExtension
+        excludes:
+          - "Info.plist"
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).system
+        INFOPLIST_FILE: CleverVpnExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CleverVpnExtension/CleverVpnExtension.entitlements
+        PROVISIONING_PROFILE_SPECIFIER: $(SYSEXT_PROFILE)
+        SKIP_INSTALL: YES
+      configFiles:
+        Release: ci/generated.xcconfig
+    dependencies:
+      - package: CleverVpnKit
+
+schemes:
+  CleverVpn:
+    build:
+      targets:
+        CleverVpn: all
+    run:
+      config: Release
+    archive:
+      config: Release

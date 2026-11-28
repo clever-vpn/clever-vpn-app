@@ -17,8 +17,23 @@ app/web/_brand.js
 # 平台构建产物
 shells/windows/bin/
 shells/windows/obj/
+shells/windows/**/bin/
+shells/windows/**/obj/
+shells/windows/installer/bin/
+shells/windows/installer/obj/
+shells/windows/installer/generated.props
+shells/windows/src/CleverVpn.App/app.ico
+shells/macos/Core/.build/
+shells/macos/Core/.swiftpm/
 shells/macos/build/
 shells/macos/DerivedData/
+shells/macos/CleverVpn.xcodeproj/
+shells/macos/project.generated.yml
+shells/macos/ci/generated.xcconfig
+shells/macos/CleverVpn/Resources/manifest.json
+shells/macos/CleverVpn/Resources/AppIcon.icns
+shells/macos/CleverVpn/Resources/web/*
+!shells/macos/CleverVpn/Resources/web/.gitkeep
 shells/android/build/
 shells/android/.gradle/
 shells/android/local.properties
