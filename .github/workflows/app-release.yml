@@ -294,3 +294,12 @@ jobs:
               --generate-notes \
               "${ASSETS[@]}"
           fi
+
+      - name: 删除临时 build 分支
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/heads/studio/build/* ]]; then
+            git push origin --delete "${GITHUB_REF_NAME}" || true
+          fi
