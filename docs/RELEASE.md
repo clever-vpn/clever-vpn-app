@@ -38,7 +38,7 @@ Last updated: 2026-11-28
 |---|---|---|---|---|
 | android | `shells/android/ci/build.sh` | `ubuntu-latest` | `shells/versions.json` 的 `android` | `shells/android/ci/out/` |
 | apple | `shells/macos/ci/build.sh` | `macos-15` | `shells/versions.json` 的 `apple` | `shells/macos/ci/out/` |
-| windows | `shells/windows/ci/build.ps1` | `windows-latest` | `shells/versions.json` 的 `windows` | `shells/windows/ci/out/` |
+| windows | `shells/windows/ci/build.ps1` | `windows-2022`（WinUI 1.7 需要 VS2022 的 PRI/MSIX 任务；`windows-latest` 已是 VS2026） | `shells/versions.json` 的 `windows` | `shells/windows/ci/out/` |
 
 脚本必须满足：
 
@@ -59,11 +59,11 @@ Last updated: 2026-11-28
 | 平台 | Secrets |
 |---|---|
 | android | `ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD` |
-| apple | `APPLE_CERT_P12_BASE64`、`APPLE_CERT_PASSWORD`、`APPLE_TEAM_ID`、`APPLE_ID`、`APPLE_APP_PASSWORD`、`APPLE_PROFILE_APP_BASE64`、`APPLE_PROFILE_SYSEXT_BASE64` |
+| apple | `APPLE_CERT_P12_BASE64`、`APPLE_CERT_PASSWORD`、`APPLE_TEAM_ID`、`APPLE_PROFILE_APP_BASE64`、`APPLE_PROFILE_SYSEXT_BASE64`、`APPLE_ASC_KEY_ID`、`APPLE_ASC_ISSUER_ID`、`APPLE_ASC_KEY_P8_BASE64` |
 | windows | `WINDOWS_PFX_BASE64`、`WINDOWS_PFX_PASSWORD` |
 
 - 签名材料**只**放 Secrets，不进仓库（本仓库是 public）。
-- Apple 的两份 provisioning profile 要对应 `bundle_id.macos` 与 `<bundle_id.macos>.network-extension`，
+- Apple 的两份 provisioning profile 要对应 `bundle_id.macos` 与 `<bundle_id.macos>.system`（kit 的 `AppConfiguration.systemExtensionBundleID` 固定拼 `.system`），
   能力：Network Extensions、System Extension、App Group。只出 macOS 直发（Developer ID + 公证）时，
   不需要 Mac App Store 那一套证书。
 - 免费账户的 fork：公开仓库的 Actions 分钟数免费，macOS runner 按 10 倍计（`apple` 最贵）。
