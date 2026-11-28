@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CleverVpn.App.Bridge;
 using CleverVpn.App.Kit;
 using CleverVpn.Core;
@@ -100,8 +101,10 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _web.CoreWebView2.PostWebMessageAsJson(
-                $$"""{"id":null,"ok":false,"error":{"code":"INTERNAL","message":"{{Escape(ex.Message)}}"}}""");
+            // handler 自己出错时也要回一个合法信封（否则页面的 Promise 永远悬着）。
+            _web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(
+                new { id = (string?)null, ok = false, error = new BridgeErrorBody("INTERNAL", ex.Message) },
+                BridgeJson.Options));
         }
     }
 
@@ -132,6 +135,4 @@ public sealed partial class MainWindow : Window
         _web?.Close();
     }
 
-    private static string Escape(string text) =>
-        text.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "");
 }
