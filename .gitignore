@@ -25,3 +25,13 @@ shells/android/local.properties
 
 # 构建期产物（由 app/app.json 的 logo/icon 生成）
 app/web/_brand-logo.*
+shells/windows/**/bin/
+shells/windows/**/obj/
+shells/windows/installer/bin/
+shells/windows/installer/obj/
+shells/windows/installer/generated.props
+shells/windows/src/CleverVpn.App/app.ico
+shells/macos/Core/.build/
+shells/macos/Core/.swiftpm/
+shells/android/app/build/
+shells/android/app/src/main/res/mipmap-*/
