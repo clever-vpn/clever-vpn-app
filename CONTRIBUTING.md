@@ -28,9 +28,9 @@ chore(kit): 升级 android-kit 到 2.1.4
 
 | 目录 | 谁能改 |
 |---|---|
-| `web/`、`app.json`、`assets/` | 租户 / 任何贡献者 |
+| `app/`（`app.json`、`assets/`、`web/`） | 租户 / 任何贡献者 |
 | `docs/` | 任何贡献者 |
-| `shell-*/`、`kit/`、`scripts/`、`app.lock.json` | 需维护者审核（见 `CODEOWNERS`）|
+| `shell-*/`、`shells/`、`kit/`、`scripts/`、`app.lock.json` | 需维护者审核（见 `CODEOWNERS`）|
 
 ## 发布
 
@@ -48,13 +48,14 @@ chore(kit): 升级 android-kit 到 2.1.4
 
 PR 必须通过 `validate` 工作流：
 
-- `app.json` 必填字段齐全、白名单内、格式合法（`color` / `crm.base` / `crm.id`）
+- `app/app.json` 必填字段齐全、白名单内、格式合法（`color` / `crm.base` / `crm.id`）
 - `app.lock.json` 结构合法（`lock_version` + 四端 `bundle_id`）
-- `assets/icon.png` 为 1024×1024、无 alpha、≤ 1 MB
-- `web/index.html` 存在
-- `web/` 不得引用外部 http(s) 脚本/样式（必须自包含）
+- `app/assets/icon.png` 为 1024×1024、无 alpha、≤ 1 MB
+- `app/web/index.html` 存在
+- `app/web/` 不得引用外部 http(s) 脚本/样式（必须自包含）
 
 ## 版本对齐
 
 - 外层版本（tag）统一管理 UI + 三端壳。
-- 闭源核心版本单独记录在 `kit/kit.version`，由 `kit/fetch-kit.sh` 拉取并校验 sha256。
+- 闭源核心版本由平台维护，各壳在自己的构建入口里消费（Phase B 起为 `shells/versions.json`）。
+- 桥的版本只有一个：`scripts/lib/web-check.mjs` 的 `BRIDGE_VERSION`，与 `docs/BRIDGE.md` 由测试钉死。

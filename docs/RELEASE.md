@@ -51,7 +51,7 @@ Last updated: 2026-10-25
    `apk` `aab`（android）/ `dmg` `pkg`（apple）/ `msix` `msixbundle` `msi` `exe`（windows）。
    后缀不对的资产不会被收进 release。
 5. **品牌与包名不重复计算**：品牌已注入 `dist/web/_brand.js`，包名在 `dist/manifest.json` 的
-   `bundle_id` —— 脚本不要自己解析 `app.json`（租户改的是那个文件，但它不是包的输入）。
+   `bundle_id` —— 脚本不要自己解析 `app/app.json`（租户改的是那个文件，但它不是包的输入）。
 6. **可复现**：同一 tag + 同一 secrets ⇒ 同样的产物；版本号从 `RELEASE_TAG` 派生，不手填。
 
 ## 4. 需要的 Secrets（按平台，未启用的平台不用配）

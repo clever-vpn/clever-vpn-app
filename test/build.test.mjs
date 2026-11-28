@@ -15,13 +15,11 @@ import { spawnSync } from 'node:child_process';
 const REPO = fileURLToPath(new URL('..', import.meta.url));
 
 const COPY = [
-  'app.json',
+  'app/app.json',
   'app.lock.json',
-  'template.json',
-  'kit/kit.version',
-  'assets/icon.png',
-  'assets/logo.svg',
-  'web/index.html',
+  'app/assets/icon.png',
+  'app/assets/logo.svg',
+  'app/web/index.html',
   'scripts/build.mjs',
   'scripts/lib/web-check.mjs',
 ];
@@ -60,7 +58,7 @@ test('基线配置：build --check 通过', () => {
 test('color 写错：#rrggbb 之外的值被拦下', () => {
   const dir = tempRepo();
   try {
-    editJson(dir, 'app.json', (a) => { a.color = 'blue'; });
+    editJson(dir, 'app/app.json', (a) => { a.color = 'blue'; });
     const r = run(dir);
     assert.equal(r.status, 1);
     assert.match(r.stderr, /color 必须是 #rrggbb/);
@@ -77,7 +75,7 @@ test('icon 写错：不是 1024×1024 被拦下', () => {
     png.writeUInt32BE(512, 16);
     png.writeUInt32BE(512, 20);
     png[25] = 2;
-    writeFileSync(join(dir, 'assets/icon.png'), png);
+    writeFileSync(join(dir, 'app/assets/icon.png'), png);
     const r = run(dir);
     assert.equal(r.status, 1);
     assert.match(r.stderr, /必须是 1024×1024/);
@@ -89,7 +87,7 @@ test('icon 写错：不是 1024×1024 被拦下', () => {
 test('logo 写错：指向不存在的文件被拦下', () => {
   const dir = tempRepo();
   try {
-    editJson(dir, 'app.json', (a) => { a.logo = 'assets/nope.svg'; });
+    editJson(dir, 'app/app.json', (a) => { a.logo = 'assets/nope.svg'; });
     const r = run(dir);
     assert.equal(r.status, 1);
     assert.match(r.stderr, /logo 指向的文件不存在/);
@@ -98,13 +96,25 @@ test('logo 写错：指向不存在的文件被拦下', () => {
   }
 });
 
-test('template.json 版本不符：构建拒绝', () => {
+test('app.json 写未知字段：白名单拦下（防把构建参数加回来）', () => {
   const dir = tempRepo();
   try {
-    editJson(dir, 'template.json', (t) => { t.studio_contract = 3; });
+    editJson(dir, 'app/app.json', (a) => { a.kit_version = '1.2.3'; });
     const r = run(dir);
     assert.equal(r.status, 1);
-    assert.match(r.stderr, /studio_contract 必须是 4/);
+    assert.match(r.stderr, /不接受字段 "kit_version"/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('app.lock.json 结构错：lock_version 不是 1 被拦下', () => {
+  const dir = tempRepo();
+  try {
+    editJson(dir, 'app.lock.json', (l) => { l.lock_version = 2; });
+    const r = run(dir);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /lock_version 必须是 1/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

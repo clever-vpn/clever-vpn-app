@@ -7,15 +7,14 @@
  *   studio       逐字节副本 src/gate/web-check.mjs（WEB_CHECK_ID = 该文件 sha256 前 16 位）
  *   写路径        checkFiles() 只做"能不能写"的规模/路径/外链判定
  *
- * 契约：clever-vpn-docs 的 `app-studio-app`（studio_contract 4）+ `app-json`。
+ * 契约：clever-vpn-docs 的 `app-studio-app` + `app-json`。
  * 本文件不定义业务，只实现契约 §4 的 check id 全表。
  */
 
 /** 归档规模上限（app-studio-app §4；只放宽不升版，收紧要升版） */
 export const LIMITS = { fileBytes: 1_000_000, totalBytes: 8_000_000, files: 200, depth: 3 };
 
-/** 模板包/契约版本（template.json 与 app-studio-app 同号） */
-export const STUDIO_CONTRACT = 4;
+/** 唯一的协议版本号：web 与壳之间的 bridge 版本（docs/BRIDGE.md 与模拟壳由测试钉住） */
 export const BRIDGE_VERSION = 3;
 
 /** bridge@3 方法白名单（decisions §10）；下划线开头的内部字段放行 */
@@ -35,7 +34,7 @@ export const APP_KEYS = ['name', 'short_name', 'tagline', 'color', 'icon', 'logo
 export const CRM_KEYS = ['base', 'id'];
 export const LINK_KEYS = ['terms', 'privacy', 'support', 'website'];
 
-/** FROZEN 必须中性（bridge@2 §3） */
+/** FROZEN 必须中性（bridge@3 §3） */
 const FROZEN_BANNED = /违规|封禁|作弊|滥用|违反/;
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
@@ -232,7 +231,7 @@ function checkBridge(ctx, texts, bridgeVersion) {
 
   if (bridgeVersion !== BRIDGE_VERSION) {
     methodsOk = false;
-    ctx.fail('bridge.methods', 'web/', 0, `模板按 bridge@${BRIDGE_VERSION} 编写，不认识 bridge@${bridgeVersion}`);
+    ctx.fail('bridge.methods', 'web/', 0, `页面按 bridge@${BRIDGE_VERSION} 编写，不认识 bridge@${bridgeVersion}`);
   }
 
   for (const f of texts) {
@@ -399,7 +398,7 @@ function checkAppConfig(ctx, app, error) {
   for (const k of Object.keys(app)) {
     if (!APP_KEYS.includes(k)) {
       ok = false;
-      ctx.fail('app.config', 'app.json', 0, `不接受字段 "${k}"（包名放 app.lock.json，核心版本放 kit/kit.version）`);
+      ctx.fail('app.config', 'app.json', 0, `不接受字段 "${k}"（包名放 app.lock.json，核心版本由平台维护）`);
     }
   }
   for (const k of ['name', 'short_name']) {

@@ -7,8 +7,10 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync, execFileSync } from 'node:child_process';
 
 /**
- * path-whitelist 的三条正例 + 越界反例（验收 U1-a）。
+ * path-whitelist 的正例 + 越界反例。
  * 用真 git 仓库跑：规则是"分支前缀 ↔ 允许路径"，mock 掉 git 就等于没测。
+ *
+ * 租户面都在 app/ 下；shells/、scripts/、.github/、docs/ 一律不可写。
  */
 
 const REPO = fileURLToPath(new URL('..', import.meta.url));
@@ -29,11 +31,11 @@ function repo() {
   git(dir, ['init', '-q', '-b', 'main']);
   git(dir, ['config', 'user.email', 'ci@example.test']);
   git(dir, ['config', 'user.name', 'ci']);
-  write(dir, 'app.json', JSON.stringify({ name: 'A', short_name: 'A', color: '#123456', crm: { base: 'https://a.example', id: '' } }, null, 2));
-  write(dir, 'web/index.html', '<!doctype html><html lang="zh-CN"><head><meta name="viewport"></head><body></body></html>');
+  write(dir, 'app/app.json', JSON.stringify({ name: 'A', short_name: 'A', color: '#123456', crm: { base: 'https://a.example', id: '' } }, null, 2));
+  write(dir, 'app/web/index.html', '<!doctype html><html lang="zh-CN"><head><meta name="viewport"></head><body></body></html>');
   write(dir, 'scripts/build.mjs', '// upstream\n');
-  write(dir, 'template.json', '{}\n');
-  write(dir, 'assets/icon.txt', 'x\n');
+  write(dir, 'shells/mock/bridge.js', '// mock\n');
+  write(dir, 'app/assets/icon.txt', 'x\n');
   git(dir, ['add', '-A']);
   git(dir, ['commit', '-q', '-m', 'base']);
   return dir;
@@ -54,10 +56,10 @@ function run(dir, headBranch) {
   });
 }
 
-test('studio/design/*：改 web/ 通过', () => {
+test('studio/design/*：改 app/web/ 通过', () => {
   const dir = repo();
   try {
-    branch(dir, 'studio/design/aaaa', { 'web/welcome.html': '<!doctype html><html lang="zh-CN"><head><meta name="viewport"></head></html>' });
+    branch(dir, 'studio/design/aaaa', { 'app/web/welcome.html': '<!doctype html><html lang="zh-CN"><head><meta name="viewport"></head></html>' });
     const r = run(dir, 'studio/design/aaaa');
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.match(r.stdout, /通过/);
@@ -66,11 +68,11 @@ test('studio/design/*：改 web/ 通过', () => {
   }
 });
 
-test('studio/design/*：改 crm.* 被拦下', () => {
+test('studio/design/*：改 app/app.json 的 crm.* 被拦下', () => {
   const dir = repo();
   try {
     branch(dir, 'studio/design/bbbb', {
-      'app.json': JSON.stringify({ name: 'A', short_name: 'A', color: '#123456', crm: { base: 'https://evil.example', id: '' } }, null, 2),
+      'app/app.json': JSON.stringify({ name: 'A', short_name: 'A', color: '#123456', crm: { base: 'https://evil.example', id: '' } }, null, 2),
     });
     const r = run(dir, 'studio/design/bbbb');
     assert.equal(r.status, 1);
@@ -92,11 +94,23 @@ test('studio/design/*：改 scripts/ 被拦下', () => {
   }
 });
 
-test('studio/config/*：只改 app.json（可改 crm）通过', () => {
+test('studio/design/*：改模拟壳 shells/ 被拦下', () => {
+  const dir = repo();
+  try {
+    branch(dir, 'studio/design/cccc2', { 'shells/mock/bridge.js': '// hijacked mock\n' });
+    const r = run(dir, 'studio/design/cccc2');
+    assert.equal(r.status, 1);
+    assert.match(r.stdout, /forbidden/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('studio/config/*：只改 app/app.json（可改 crm）通过', () => {
   const dir = repo();
   try {
     branch(dir, 'studio/config/dddd', {
-      'app.json': JSON.stringify({ name: 'A', short_name: 'A', color: '#123456', crm: { base: 'https://b.example', id: '' } }, null, 2),
+      'app/app.json': JSON.stringify({ name: 'A', short_name: 'A', color: '#123456', crm: { base: 'https://b.example', id: '' } }, null, 2),
     });
     const r = run(dir, 'studio/config/dddd');
     assert.equal(r.status, 0, r.stdout + r.stderr);
@@ -105,10 +119,10 @@ test('studio/config/*：只改 app.json（可改 crm）通过', () => {
   }
 });
 
-test('studio/config/*：改 web/ 被拦下', () => {
+test('studio/config/*：改 app/web/ 被拦下', () => {
   const dir = repo();
   try {
-    branch(dir, 'studio/config/eeee', { 'web/index.html': '<!doctype html><html lang="zh-CN"><head><meta name="viewport"></head><p>x</p></html>' });
+    branch(dir, 'studio/config/eeee', { 'app/web/index.html': '<!doctype html><html lang="zh-CN"><head><meta name="viewport"></head><p>x</p></html>' });
     const r = run(dir, 'studio/config/eeee');
     assert.equal(r.status, 1);
     assert.match(r.stdout, /outside/);
@@ -117,12 +131,12 @@ test('studio/config/*：改 web/ 被拦下', () => {
   }
 });
 
-test('studio/onboard/*：带 app.lock.json + web/ 通过', () => {
+test('studio/onboard/*：带 app.lock.json + app/web/ 通过', () => {
   const dir = repo();
   try {
     branch(dir, 'studio/onboard/ffff', {
       'app.lock.json': JSON.stringify({ lock_version: 1, bundle_id: { android: 'com.a.b', ios: 'com.a.b', macos: 'com.a.b', windows: 'com.a.b' } }, null, 2),
-      'web/index.html': '<!doctype html><html lang="zh-CN"><head><meta name="viewport"></head><p>onboard</p></html>',
+      'app/web/index.html': '<!doctype html><html lang="zh-CN"><head><meta name="viewport"></head><p>onboard</p></html>',
     });
     const r = run(dir, 'studio/onboard/ffff');
     assert.equal(r.status, 0, r.stdout + r.stderr);

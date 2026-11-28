@@ -5,18 +5,21 @@
  * 用法：
  *   node scripts/check-web.mjs                       # 只看结果
  *   node scripts/check-web.mjs --report r.json       # 同时写出报告（CI artifact）
- *   node scripts/check-web.mjs --root test/fixtures  # 换根目录（只给测试用）
+ *   node scripts/check-web.mjs --root test/fixtures  # 换仓库根（只给测试用）
  *
  * 退出码：0 = 通过（允许 warn），1 = 有违规，2 = 用法/环境错误。
  *
  * 定位：CI 门禁（validate.yml 的 web-contract job）。这里只做**静态**判定；
  * 运行时行为（点击流、console、截图）由 web-smoke（Playwright）判定。
+ *
+ * 租户面在 app/ 下，但闸门的逻辑根仍是 `web/…`：这里收集时剥掉 `app/` 前缀，
+ * 判决与报告都不认识 `app/`，所以 WEB_CHECK_ID 与 Studio 副本保持一致。
  */
 import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname, resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runWebCheck, TEXT_EXT, STUDIO_CONTRACT, BRIDGE_VERSION } from './lib/web-check.mjs';
+import { runWebCheck, TEXT_EXT, BRIDGE_VERSION } from './lib/web-check.mjs';
 
 const SELF = fileURLToPath(import.meta.url);
 const LIB = new URL('./lib/web-check.mjs', import.meta.url);
@@ -29,9 +32,10 @@ function argValue(name) {
 }
 const reportPath = argValue('--report');
 const ROOT = argValue('--root') ? resolve(process.cwd(), argValue('--root')) : REPO;
+const APP = join(ROOT, 'app');
 
-if (!existsSync(join(ROOT, 'web'))) {
-  console.error(`✗ 找不到 ${join(ROOT, 'web')}`);
+if (!existsSync(join(APP, 'web'))) {
+  console.error(`✗ 找不到 ${join(APP, 'web')}`);
   process.exit(2);
 }
 
@@ -51,11 +55,11 @@ function collect(absDir, prefix) {
   }
 }
 
-collect(join(ROOT, 'web'), 'web');
-if (existsSync(join(ROOT, 'assets'))) collect(join(ROOT, 'assets'), 'assets');
+collect(join(APP, 'web'), 'web');
+if (existsSync(join(APP, 'assets'))) collect(join(APP, 'assets'), 'assets');
 
 let appJson = null;
-const appJsonPath = join(ROOT, 'app.json');
+const appJsonPath = join(APP, 'app.json');
 if (existsSync(appJsonPath)) appJson = readFileSync(appJsonPath, 'utf8');
 
 // WEB_CHECK_ID：与 studio 副本对同一份文件算 sha256，前 16 字节；报告里带，便于对屏
@@ -63,7 +67,7 @@ const webCheckId = `sha256:${createHash('sha256').update(readFileSync(LIB)).dige
 
 const result = runWebCheck({ files, appJson, bridge: BRIDGE_VERSION });
 
-console.log(`\nweb/ 契约校验（studio_contract ${STUDIO_CONTRACT} · bridge@${BRIDGE_VERSION}）`);
+console.log(`\nweb/ 契约校验（bridge@${BRIDGE_VERSION}）`);
 console.log(`  ${webCheckId}\n`);
 for (const c of result.checks) {
   const mark = c.status === 'pass' ? '✓' : c.status === 'warn' ? '!' : '✗';
@@ -84,13 +88,12 @@ if (reportPath) {
     out,
     JSON.stringify(
       {
-        studio_contract: STUDIO_CONTRACT,
         bridge: BRIDGE_VERSION,
         web_check_id: webCheckId,
         ok: result.ok,
         checks: result.checks,
         violations: result.violations,
-        toolchain: { runtime: `node ${process.version}`, generator: 'scripts/check-web.mjs@2', engines: [] },
+        toolchain: { runtime: `node ${process.version}`, generator: 'scripts/check-web.mjs@3', engines: [] },
       },
       null,
       2,
