@@ -33,6 +33,11 @@ on:
         description: '发布 tag（如 v1.0.0）。留空则自动 bump 最新 release 的 patch+1'
         required: false
         default: ''
+      dry_run:
+        description: '只构建、不建 tag/release（用来在分支上验证产物）'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -172,88 +177,33 @@ jobs:
   android:
     needs: [plan, web]
     if: needs.plan.outputs.want_android == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-      - uses: actions/download-artifact@v4
-        with:
-          name: web-dist
-          path: dist
-      - name: 出包（apk / aab）
-        env:
-          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: bash shells/android/ci/build.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android-pkg
-          path: shells/android/ci/out/
-          if-no-files-found: error
-          retention-days: 7
+    uses: ./.github/workflows/_shell-android.yml
+    with:
+      tag: ${{ needs.plan.outputs.tag }}
+    secrets: inherit
 
   apple:
     needs: [plan, web]
     if: needs.plan.outputs.want_apple == 'true'
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: web-dist
-          path: dist
-      - name: 出包（dmg / pkg）
-        env:
-          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
-          APPLE_CERT_P12_BASE64: ${{ secrets.APPLE_CERT_P12_BASE64 }}
-          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
-          APPLE_PROFILE_APP_BASE64: ${{ secrets.APPLE_PROFILE_APP_BASE64 }}
-          APPLE_PROFILE_SYSEXT_BASE64: ${{ secrets.APPLE_PROFILE_SYSEXT_BASE64 }}
-        run: bash shells/macos/ci/build.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apple-pkg
-          path: shells/macos/ci/out/
-          if-no-files-found: error
-          retention-days: 7
+    uses: ./.github/workflows/_shell-macos.yml
+    with:
+      tag: ${{ needs.plan.outputs.tag }}
+    secrets: inherit
 
   windows:
     needs: [plan, web]
     if: needs.plan.outputs.want_windows == 'true'
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: web-dist
-          path: dist
-      - name: 出包（msi）
-        shell: pwsh
-        env:
-          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
-          WINDOWS_PFX_BASE64: ${{ secrets.WINDOWS_PFX_BASE64 }}
-          WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
-        run: pwsh -NoProfile -File shells/windows/ci/build.ps1
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-pkg
-          path: shells/windows/ci/out/
-          if-no-files-found: error
-          retention-days: 7
+    uses: ./.github/workflows/_shell-windows.yml
+    with:
+      tag: ${{ needs.plan.outputs.tag }}
+    secrets: inherit
 
   # 只有所有「被选中」的平台都成功才建 release；没被选中的平台算 skipped，不阻塞
   release:
     needs: [plan, web, android, apple, windows]
     if: |
       always() &&
+      inputs.dry_run != true &&
       needs.plan.result == 'success' &&
       needs.web.result == 'success' &&
       contains(fromJSON('["success","skipped"]'), needs.android.result) &&

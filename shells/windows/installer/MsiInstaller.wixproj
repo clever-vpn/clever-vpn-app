@@ -1,0 +1,24 @@
+<Project Sdk="WixToolset.Sdk/6.0.1">
+  <!-- ci/build.ps1 在构建前写这个文件：AppName / MsiVersion / PublishDir -->
+  <Import Project="generated.props" Condition="Exists('generated.props')" />
+  <PropertyGroup>
+    <AppName Condition="'$(AppName)' == ''">Clever VPN</AppName>
+    <MsiVersion Condition="'$(MsiVersion)' == ''">0.0.0.0</MsiVersion>
+    <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildProjectDirectory)\..\src\CleverVpn.App\bin\publish</PublishDir>
+    <SuppressIces>ICE03;ICE30;ICE82</SuppressIces>
+    <OutputName>CleverVpn</OutputName>
+    <DefineConstants>
+      AppName=$(AppName);
+      MsiVersion=$(MsiVersion);
+    </DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <BindPath Include="$(PublishDir)">
+      <BindName>PublishDir</BindName>
+    </BindPath>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="6.0.1" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="6.0.1" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- 壳依赖的 kit 版本由 ci/build.ps1 传入；本机直接 dotnet build 时也可以 -p:KitVersion=x.y.z -->
+    <KitVersion Condition="'$(KitVersion)' == '' and '$(KIT_VERSION)' != ''">$(KIT_VERSION)</KitVersion>
+  </PropertyGroup>
+</Project>
