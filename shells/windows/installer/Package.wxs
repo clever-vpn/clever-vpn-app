@@ -1,0 +1,22 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Id="CleverVpn.App.Windows"
+           Name="$(var.AppName)"
+           Manufacturer="Clever VPN"
+           Version="$(var.MsiVersion)"
+           UpgradeCode="7B1C2F5A-3D4E-4B6A-9C21-5E8D7A1B2C34">
+    <MajorUpgrade DowngradeErrorMessage="已经安装了更新的版本，请先从「应用和功能」卸载旧版。" />
+    <Media Id="1" EmbedCab="yes" Cabinet="main.cab" CompressionLevel="high" />
+
+    <Icon Id="AppIcon" SourceFile="..\src\CleverVpn.App\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+
+    <UI>
+      <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    </UI>
+
+    <Feature Id="Main">
+      <ComponentGroupRef Id="CleverVpnComponents" />
+    </Feature>
+  </Package>
+</Wix>

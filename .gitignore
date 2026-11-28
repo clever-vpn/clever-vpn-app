@@ -15,8 +15,10 @@ blob-report/
 app/web/_brand.js
 
 # 平台构建产物
-shells/windows/bin/
-shells/windows/obj/
+shells/windows/**/bin/
+shells/windows/**/obj/
+shells/windows/installer/generated.props
+shells/windows/src/CleverVpn.App/app.ico
 shells/macos/build/
 shells/macos/DerivedData/
 shells/android/build/

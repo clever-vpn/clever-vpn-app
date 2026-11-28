@@ -228,26 +228,10 @@ jobs:
   windows:
     needs: [plan, web]
     if: needs.plan.outputs.want_windows == 'true'
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: web-dist
-          path: dist
-      - name: 出包（msi）
-        shell: pwsh
-        env:
-          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
-          WINDOWS_PFX_BASE64: ${{ secrets.WINDOWS_PFX_BASE64 }}
-          WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
-        run: pwsh -NoProfile -File shells/windows/ci/build.ps1
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-pkg
-          path: shells/windows/ci/out/
-          if-no-files-found: error
-          retention-days: 7
+    uses: ./.github/workflows/_shell-windows.yml
+    with:
+      tag: ${{ needs.plan.outputs.tag }}
+    secrets: inherit
 
   # 只有所有「被选中」的平台都成功才建 release；没被选中的平台算 skipped，不阻塞
   release:

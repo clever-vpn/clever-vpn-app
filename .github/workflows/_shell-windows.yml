@@ -1,0 +1,64 @@
+# Windows 壳：可被 release.yml 调用（workflow_call），也可单独 dispatch 做功能验收。
+#
+# - workflow_call：用发布流程产出的 web-dist（dist/ 已包含 web/ + manifest.json + icon.png）
+# - workflow_dispatch：自己先跑 node scripts/build.mjs，出未签名 / 已签名包（取决于 secrets）
+name: shell-windows
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: '发布 tag（含 v 前缀）'
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '本地调试用的版本标签（含 v 前缀）'
+        type: string
+        required: false
+        default: 'v0.0.0-dev'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 生成 dist/（仅手动 dispatch）
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: node scripts/build.mjs
+
+      - name: 取发布流程的 dist/
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+
+      - name: 出包（MSI + 单测；有 PFX 就签名）
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          WINDOWS_PFX_BASE64: ${{ secrets.WINDOWS_PFX_BASE64 }}
+          WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
+        run: pwsh -NoProfile -File shells/windows/ci/build.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-pkg
+          path: shells/windows/ci/out/
+          if-no-files-found: error
+          retention-days: 7
