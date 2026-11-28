@@ -1,5 +1,9 @@
 using System.Diagnostics;
 using Clever_Vpn_Windows_Kit.Data;
+using KitIpRule = Clever_Vpn_Windows_Kit.Data.IpRule;
+using KitDomainRule = Clever_Vpn_Windows_Kit.Data.DomainRule;
+using BridgeIpRule = CleverVpn.Core.Bridge.IpRule;
+using BridgeDomainRule = CleverVpn.Core.Bridge.DomainRule;
 using CleverVpn.Core;
 using CleverVpn.Core.Bridge;
 using Microsoft.UI.Dispatching;
@@ -143,12 +147,12 @@ public sealed class KitBackend : IShellBackend
                 Enable = split.Region.Enable,
                 Code = string.IsNullOrWhiteSpace(split.Region.Code) ? "CN" : split.Region.Code,
             },
-            Ip = new IpRule
+            Ip = new KitIpRule
             {
                 Enable = split.Ip.Enable,
                 IpCidr = split.Ip.IpCidr.ToList(),
             },
-            Domain = new DomainRule
+            Domain = new KitDomainRule
             {
                 Enable = split.Domain.Enable,
                 Domain = split.Domain.Domain.ToList(),
@@ -203,8 +207,8 @@ public sealed class KitBackend : IShellBackend
     private static SplitResult MapSplit(SplitInfo split) =>
         new(
             new RegionRule(split.Region.Enable, string.IsNullOrWhiteSpace(split.Region.Code) ? "CN" : split.Region.Code),
-            new IpRule(split.Ip.Enable, split.Ip.IpCidr.ToList()),
-            new DomainRule(
+            new BridgeIpRule(split.Ip.Enable, split.Ip.IpCidr.ToList()),
+            new BridgeDomainRule(
                 split.Domain.Enable,
                 split.Domain.Domain.ToList(),
                 split.Domain.DomainSuffix.ToList(),
@@ -213,8 +217,8 @@ public sealed class KitBackend : IShellBackend
     private static SplitResult DefaultSplit() =>
         new(
             new RegionRule(true, "CN"),
-            new IpRule(false, Array.Empty<string>()),
-            new DomainRule(false, Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>()));
+            new BridgeIpRule(false, Array.Empty<string>()),
+            new BridgeDomainRule(false, Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>()));
 
     private static string ProtocolName(ProtocolType protocol) => protocol switch
     {

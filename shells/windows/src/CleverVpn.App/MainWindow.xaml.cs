@@ -67,7 +67,7 @@ public sealed partial class MainWindow : Window
                     args.Cancel = true;
                 }
             };
-            core.NewWindowRequested += (_, args) =>
+            core.NewWindowRequested += (s, args) =>
             {
                 args.Handled = true;
                 if (Uri.TryCreate(args.Uri, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps)
