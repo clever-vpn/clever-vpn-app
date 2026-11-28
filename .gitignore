@@ -35,3 +35,7 @@ shells/macos/Core/.build/
 shells/macos/Core/.swiftpm/
 shells/android/app/build/
 shells/android/app/src/main/res/mipmap-*/
+shells/*/ci/out/
+shells/macos/CleverVpn/Resources/manifest.json
+shells/macos/CleverVpn/Resources/AppIcon.icns
+shells/macos/CleverVpn/Resources/web/*
