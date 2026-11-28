@@ -11,10 +11,15 @@ settings:
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Manual
     CODE_SIGN_IDENTITY: "Developer ID Application"
-    DEVELOPMENT_TEAM: $(APPLE_TEAM_ID)
-    MARKETING_VERSION: $(APP_VERSION)
-    CURRENT_PROJECT_VERSION: $(APP_BUILD)
+    DEVELOPMENT_TEAM: "__APPLE_TEAM_ID__"
+    MARKETING_VERSION: "__APP_VERSION__"
+    CURRENT_PROJECT_VERSION: "__APP_BUILD__"
     ENABLE_HARDENED_RUNTIME: YES
+    APP_BUNDLE_ID: "__APP_BUNDLE_ID__"
+    APP_GROUP_ID: "__APP_GROUP_ID__"
+    APP_DISPLAY_NAME: "__APP_DISPLAY_NAME__"
+    APP_PROFILE: "__APP_PROFILE__"
+    SYSEXT_PROFILE: "__SYSEXT_PROFILE__"
 
 packages:
   CleverVpnKit:
@@ -43,8 +48,6 @@ targets:
         INFOPLIST_FILE: CleverVpn/Info.plist
         CODE_SIGN_ENTITLEMENTS: CleverVpn/CleverVpn.entitlements
         PROVISIONING_PROFILE_SPECIFIER: $(APP_PROFILE)
-      configFiles:
-        Release: ci/generated.xcconfig
     dependencies:
       - package: CleverVpnKit
       - package: CleverVpnShellCore
@@ -66,8 +69,6 @@ targets:
         CODE_SIGN_ENTITLEMENTS: CleverVpnExtension/CleverVpnExtension.entitlements
         PROVISIONING_PROFILE_SPECIFIER: $(SYSEXT_PROFILE)
         SKIP_INSTALL: YES
-      configFiles:
-        Release: ci/generated.xcconfig
     dependencies:
       - package: CleverVpnKit
 

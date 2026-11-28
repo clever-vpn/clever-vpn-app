@@ -39,10 +39,10 @@ jobs:
       - name: 安装 xcodegen
         run: brew install xcodegen
 
-      - name: 生成 dist/（仅手动 dispatch）
+      - name: 生成 dist/（push / 手动 dispatch）
         if: github.event_name != 'workflow_call'
         env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ inputs.tag || 'v0.0.0-dev' }}
         run: node scripts/build.mjs
 
       - name: 取发布流程的 dist/
@@ -54,7 +54,7 @@ jobs:
 
       - name: 出包（SwiftPM 单测 → archive → DMG → 公证）
         env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ inputs.tag || 'v0.0.0-dev' }}
           APPLE_CERT_P12_BASE64: ${{ secrets.APPLE_CERT_P12_BASE64 }}
           APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

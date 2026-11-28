@@ -86,19 +86,32 @@ fi
 APP_GROUP_ID="$([ "$SIGNED" = 1 ] && echo "$APPLE_TEAM_ID.group.$APP_BUNDLE_ID" || echo "group.$APP_BUNDLE_ID")"
 APP_BUILD="${GITHUB_RUN_NUMBER:-1}"
 
-cat > "$CI_DIR/generated.xcconfig" <<XCCONFIG
-APP_BUNDLE_ID = $APP_BUNDLE_ID
-APP_GROUP_ID = $APP_GROUP_ID
-APPLE_TEAM_ID = ${APPLE_TEAM_ID:-}
-APP_VERSION = $VERSION
-APP_BUILD = $APP_BUILD
-APP_DISPLAY_NAME = $APP_DISPLAY_NAME
-APP_PROFILE = $APP_PROFILE
-SYSEXT_PROFILE = $SYSEXT_PROFILE
-XCCONFIG
-
 command -v xcodegen >/dev/null 2>&1 || die "缺少 xcodegen：macOS runner 上 brew install xcodegen"
-sed "s/__KIT_VERSION__/$KIT_VERSION/" "$MACOS_DIR/project.yml" > "$MACOS_DIR/project.generated.yml"
+
+# 把品牌/证书/版本替换进工程定义（不再用 xcconfig：两个 target 的 bundle id/证书不同，
+# 逐 target 的 xcconfig 容易在 archive 时丢变量）。
+PROJECT_SRC="$MACOS_DIR/project.yml" PROJECT_OUT="$MACOS_DIR/project.generated.yml" \
+KIT_VERSION="$KIT_VERSION" APP_BUNDLE_ID="$APP_BUNDLE_ID" APP_GROUP_ID="$APP_GROUP_ID" \
+APPLE_TEAM_ID="${APPLE_TEAM_ID:-}" APP_VERSION="$VERSION" APP_BUILD="$APP_BUILD" \
+APP_DISPLAY_NAME="$APP_DISPLAY_NAME" APP_PROFILE="$APP_PROFILE" SYSEXT_PROFILE="$SYSEXT_PROFILE" \
+python3 - <<'PY'
+import os
+src = open(os.environ["PROJECT_SRC"], encoding="utf-8").read()
+mapping = {
+    "__KIT_VERSION__": os.environ.get("KIT_VERSION", ""),
+    "__APP_BUNDLE_ID__": os.environ.get("APP_BUNDLE_ID", ""),
+    "__APP_GROUP_ID__": os.environ.get("APP_GROUP_ID", ""),
+    "__APPLE_TEAM_ID__": os.environ.get("APPLE_TEAM_ID", ""),
+    "__APP_VERSION__": os.environ.get("APP_VERSION", ""),
+    "__APP_BUILD__": os.environ.get("APP_BUILD", ""),
+    "__APP_DISPLAY_NAME__": os.environ.get("APP_DISPLAY_NAME", ""),
+    "__APP_PROFILE__": os.environ.get("APP_PROFILE", ""),
+    "__SYSEXT_PROFILE__": os.environ.get("SYSEXT_PROFILE", ""),
+}
+for key, value in mapping.items():
+    src = src.replace(key, value.replace('"', '\\"').replace("\n", " "))
+open(os.environ["PROJECT_OUT"], "w", encoding="utf-8").write(src)
+PY
 
 log "SwiftPM 单测（Core）"
 swift test --package-path "$MACOS_DIR/Core"
