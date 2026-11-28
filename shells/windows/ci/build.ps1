@@ -66,12 +66,12 @@ if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
 # WinUI 的 PRI 生成任务（ExpandPriContent）由 EnableMsixTooling 解析；如果机器上有 VS，
 # 顺手把它的 AppxPackage 目录显式指过去（dotnet SDK 8.0.4xx 起不再自带这个任务）。
 $vsRoots = @($env:ProgramFiles, ${env:ProgramFiles(x86)}) | Where-Object { $_ -and (Test-Path $_) }
-$appxTasks = foreach ($root in $vsRoots) {
+$appxTasks = @(foreach ($root in $vsRoots) {
   $vs = Join-Path $root 'Microsoft Visual Studio'
   if (Test-Path $vs) {
     Get-ChildItem $vs -Recurse -Filter 'Microsoft.Build.Packaging.Pri.Tasks.dll' -ErrorAction SilentlyContinue
   }
-} | Select-Object -First 1
+}) | Select-Object -First 1
 
 $extra = @()
 if ($appxTasks) {
