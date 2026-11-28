@@ -40,13 +40,13 @@ jobs:
         run: brew install xcodegen
 
       - name: 生成 dist/（仅手动 dispatch）
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name != 'workflow_call'
         env:
           RELEASE_TAG: ${{ inputs.tag }}
         run: node scripts/build.mjs
 
       - name: 取发布流程的 dist/
-        if: github.event_name != 'workflow_dispatch'
+        if: github.event_name == 'workflow_call'
         uses: actions/download-artifact@v4
         with:
           name: web-dist
