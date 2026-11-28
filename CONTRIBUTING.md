@@ -30,7 +30,7 @@ chore(kit): 升级 android-kit 到 2.1.4
 |---|---|
 | `app/`（`app.json`、`assets/`、`web/`） | 租户 / 任何贡献者 |
 | `docs/` | 任何贡献者 |
-| `shell-*/`、`shells/`、`kit/`、`scripts/`、`app.lock.json` | 需维护者审核（见 `CODEOWNERS`）|
+| `shells/`、`scripts/`、`app.lock.json` | 需维护者审核（见 `CODEOWNERS`）|
 
 ## 发布
 
@@ -57,5 +57,5 @@ PR 必须通过 `validate` 工作流：
 ## 版本对齐
 
 - 外层版本（tag）统一管理 UI + 三端壳。
-- 闭源核心版本由平台维护，各壳在自己的构建入口里消费（Phase B 起为 `shells/versions.json`）。
+- 闭源核心版本由平台维护，集中在 `shells/versions.json`（各壳的 ci 脚本读自己那一项）。
 - 桥的版本只有一个：`scripts/lib/web-check.mjs` 的 `BRIDGE_VERSION`，与 `docs/BRIDGE.md` 由测试钉死。

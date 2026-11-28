@@ -1,6 +1,6 @@
 ---
 name: white-label-app
-description: **WORKFLOW SKILL** — 把 clever-vpn-app 变成自有品牌应用并由 GitHub Actions 出包。USE FOR: 改应用名/副标题/图标/标记/配色、`app/app.json` 校验失败、图标被拒（尺寸/alpha）、`node scripts/build.mjs` 报错、改登录/套餐/购买/连接页、`web-contract` 或 `web-smoke` 红了、不知道怎么在 CI 出包、不确定 `app/web/` 里能改什么。DO NOT USE FOR: 改原生壳 `shell-*/shells/` 或 bridge 契约（那是修改项目本身，要同步 `docs/BRIDGE.md` 并三端一起改）、改钉死的 `app.lock.json`（包名）、改闭源核心 `kit/`、部署 CRM（用 `white-label-crm`）。INVOKES: 读 `app/app.json`/`app/assets/`/`app/web/`、`node scripts/build.mjs --check`、`node scripts/check-web.mjs`、分支 + PR。
+description: **WORKFLOW SKILL** — 把 clever-vpn-app 变成自有品牌应用并由 GitHub Actions 出包。USE FOR: 改应用名/副标题/图标/标记/配色、`app/app.json` 校验失败、图标被拒（尺寸/alpha）、`node scripts/build.mjs` 报错、改登录/套餐/购买/连接页、`web-contract` 或 `web-smoke` 红了、不知道怎么在 CI 出包、不确定 `app/web/` 里能改什么。DO NOT USE FOR: 改原生壳 `shells/` 或 bridge 契约（那是修改项目本身，要同步 `docs/BRIDGE.md` 并三端一起改）、改钉死的 `app.lock.json`（包名）、改闭源核心 `kit/`、部署 CRM（用 `white-label-crm`）。INVOKES: 读 `app/app.json`/`app/assets/`/`app/web/`、`node scripts/build.mjs --check`、`node scripts/check-web.mjs`、分支 + PR。
 ---
 
 # 白标 App 定制（租户视角）
@@ -10,7 +10,7 @@ description: **WORKFLOW SKILL** — 把 clever-vpn-app 变成自有品牌应用�
 ## 0. 保证边界（先读这一条）
 
 我们只保证**缺省状态**（只改 `app/app.json`、`app/assets/` 与我们指定的页面文件）下的构建与发布正确性。
-你当然可以改任何代码（MIT 开源），但一旦改了 `shell-*`、`shells/`、`kit/`、`scripts/`，
+你当然可以改任何代码（MIT 开源），但一旦改了 `shells/`、`scripts/`，
 构建与发布就由你自己负责，上游更新时也可能冲突。
 
 **fork 成 public 还是 private 由你决定**（只影响 Actions 分钟数计费：public 免费，
@@ -39,7 +39,7 @@ private 消耗你的配额；macOS runner 计费倍率 ×10）。
 | 参数 | 在哪 | 谁来改 |
 |---|---|---|
 | cf-api 地址 | kit 内嵌 | —— |
-| 闭源核心版本 | 平台维护（不在你改的文件里） | **你不要动** |
+| 闭源核心版本 | `shells/versions.json`（平台维护） | **你不要动** |
 | `bundle_id` | `app.lock.json` | 机器生成（Studio 首次发布时，**bundle_id 必须你确认**）；上架后不可改 |
 
 你只需要：① 自己的 CRM 地址与 `crm.id`（从 CRM 后台复制）② 应用名 / 副标题 / 颜色 / 链接
@@ -158,7 +158,7 @@ cd web && python3 -m http.server 8000
    - `tag` 留空 = 自动在上个 release 上 patch+1（首次 `v0.1.0`）；
    - 也可指定 `1.2.3` 或 `v1.2.3`（统一按 `v` 前缀发布）。
 3. 产物：`clever-vpn-app-web-vX.Y.Z.zip`（`dist/web` + `manifest.json`）；原生包
-   `apk`/`aab`、`dmg`、`msix`/`exe` 由各端 `shell-*/ci/build.*` 产出。
+   `apk`/`aab`、`dmg`、`msi` 由 `shells/<platform>/ci/build.*` 产出。
 
 原生安装包由各端壳的 workflow 产出（Windows MSI / macOS 公证 DMG / Android apk+aab）。
 需要的 Secrets 与壳的构建入口契约见 `docs/RELEASE.md`。
@@ -194,4 +194,4 @@ cd web && python3 -m http.server 8000
 - [ ] `bundle_id` 四端都是自己的反域名、非 `com.example.*`
 - [ ] `links` 指向真实条款/隐私/客服页
 - [ ] Actions `release` 成功，Release 里有 zip 资产
-- [ ] 未修改 `shell-*`、`shells/`、`kit/`、`scripts/`、`app.lock.json`（改了就要自己维护）
+- [ ] 未修改 `shells/`、`scripts/`、`app.lock.json`（改了就要自己维护）

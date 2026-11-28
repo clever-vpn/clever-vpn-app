@@ -11,7 +11,7 @@
 > `app/app.json` / `app/assets/` / `app/web/` 并跑 `node scripts/build.mjs --check` 验收。
 >
 > **保证边界**：我们只保证缺省配置（只改 `app/` 下本文允许的文件）下的构建与
-> 发布正确；改 `shell-*/`、`shells/`、`kit/`、`scripts/` 就要自己维护。
+> 发布正确；改 `shells/`、`scripts/` 就要自己维护。
 > **发布只走 GitHub Actions**，不要在本地 build 后手工上传当正式发布。
 
 ## 零、拿到仓库之后第一件事：把门禁打开
@@ -60,10 +60,10 @@
 | `studio/design/*` | `app/web/**`、`app/assets/**`、`app/app.json`（**`crm.*` 不可改**） |
 | `studio/config/*` | 仅 `app/app.json`（可以改 `crm.*`） |
 | `studio/onboard/*` | 以上 + `app.lock.json`（首次接入） |
-| 任何 PR | ❌ `shell-*/`、`shells/`、`kit/`、`scripts/`、`.github/`、`docs/` |
+| 任何 PR | ❌ `shells/`、`scripts/`、`.github/`、`docs/` |
 
 > Studio 会确保仓库存在（复用你的 fork，或建一个新的），发布在四道检查全绿后由它合并并打版本；
-> 它**不会删除或转移**你的仓库，也不会碰 `shell-*/`、`shells/`、`kit/`、`scripts/`。仓库始终是你的。
+> 它**不会删除或转移**你的仓库，也不会碰 `shells/`、`scripts/`。仓库始终是你的。
 > **人机校验（Turnstile）与 App 无关**：模板永远不加载第三方脚本。
 
 ## 一、三步上线
@@ -220,7 +220,7 @@ dist/
 └── manifest.json   品牌 / 版本 / CRM 地址 / bundle_id / 构建时间（壳读 base 与包名）
 ```
 
-平台安装包由各壳的构建产出（Windows `msi`、macOS `dmg`、Android `apk`/`aab`），
+平台安装包由 `shells/` 的构建产出（Windows `msi`、macOS `dmg`、Android `apk`/`aab`），
 **由 GitHub Actions 生成并在 Release 里提供下载**：Actions → `release` → Run workflow，
 `platform` 选 `android` / `apple` / `windows`（`all` = 所有已实现的平台）。
 壳落地前选这三项会**直接失败并告诉你缺什么**（不会建出没有资产的 release），

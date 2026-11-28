@@ -15,16 +15,16 @@ app/                租户面（Studio 唯一可写）——fork 后只改这里
   assets/             图标源图（icon，1024×1024 PNG 无 alpha）与界面标记（logo，PNG/SVG）
   web/                界面：10 页 HTML + app.css + ui/api/bridge/icons.js
 app.lock.json       包名 + 血缘（机器生成，手改无效）
-app/web/bridge.js   无壳时的最小 fallback（真实壳在 shell-*/）
+app/web/bridge.js   无壳时的最小 fallback（真实壳在 shells/）
 scripts/build.mjs   构建：校验 → 注入 window.BRAND → 生成 dist/
 scripts/lib/web-check.mjs  闸门纯函数（CI 与 Studio 共用同一份判决，bridge 版本号在这里）
 scripts/check-web.mjs      闸门 CLI
 scripts/check-paths.mjs    分支前缀 ↔ 允许路径
 shells/mock/bridge.js      模拟壳（Studio 预览与 CI 冒烟共用的那份「壳」）
-shell-windows/      WinUI 3 + WebView2
-shell-macos/        SwiftUI + WKWebView + NetworkExtension 系统扩展
-shell-android/      Kotlin + WebView + VpnService
-kit/                闭源核心的版本（平台维护）
+shells/windows/     WinUI 3 + WebView2
+shells/macos/       SwiftUI + WKWebView + NetworkExtension 系统扩展
+shells/android/     Kotlin + WebView + VpnService
+shells/versions.json  kit 版本矩阵（平台维护）
 docs/               架构、bridge 契约、UI 原则、租户指南
 ```
 

@@ -7,10 +7,11 @@
 #   tag       留空 = 在最新 release 上 patch+1；统一 v 前缀。
 #
 # 原生壳的构建入口是各目录下的 ci 脚本（壳落地时补上，契约见 docs/RELEASE.md）：
-#   shell-android/ci/build.sh   → 产物写入 shell-android/ci/out/
-#   shell-macos/ci/build.sh     → 产物写入 shell-macos/ci/out/
-#   shell-windows/ci/build.ps1  → 产物写入 shell-windows/ci/out/
+#   shells/android/ci/build.sh   → 产物写入 shells/android/ci/out/
+#   shells/macos/ci/build.sh     → 产物写入 shells/macos/ci/out/
+#   shells/windows/ci/build.ps1  → 产物写入 shells/windows/ci/out/
 #
+# kit 版本不在这条工作流里：各壳的 ci 脚本自己读 shells/versions.json。
 # 与 clever-vpn-cf-api 的发布口径保持一致：统一 v 前缀，成功后创建 tag 与 release。
 name: release
 
@@ -42,12 +43,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # 解析 tag + 判断哪些平台真的能构建（壳的 ci 入口存在 且 kit 版本已发布）
+  # 解析 tag + 判断哪些平台真的能构建（壳的 ci 入口存在）
   plan:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.resolve.outputs.release_tag }}
-      kit_version: ${{ steps.cap.outputs.kit_version }}
       want_android: ${{ steps.cap.outputs.want_android }}
       want_apple: ${{ steps.cap.outputs.want_apple }}
       want_windows: ${{ steps.cap.outputs.want_windows }}
@@ -89,30 +89,18 @@ jobs:
           PLATFORM: ${{ inputs.platform }}
         run: |
           set -euo pipefail
-          KIT_VERSION="$(sed 's/#.*//' kit/kit.version | tr -d '[:space:]')"
 
           case "$PLATFORM" in
             all | web | android | apple | windows) ;;
             *) echo "::error::未知平台 ${PLATFORM}（可选 all / web / android / apple / windows）"; exit 1 ;;
           esac
 
-          kit_ok=true
-          case "$KIT_VERSION" in '' | 0.0.0) kit_ok=false ;; esac
-
           entry_for() {
             case "$1" in
-              android) echo "shell-android/ci/build.sh" ;;
-              apple)   echo "shell-macos/ci/build.sh" ;;
-              windows) echo "shell-windows/ci/build.ps1" ;;
+              android) echo "shells/android/ci/build.sh" ;;
+              apple)   echo "shells/macos/ci/build.sh" ;;
+              windows) echo "shells/windows/ci/build.ps1" ;;
             esac
-          }
-
-          why_not() {
-            if [ "$kit_ok" != true ]; then
-              echo "kit/kit.version 是占位值（${KIT_VERSION:-空}），闭源核心尚未发布"
-            else
-              echo "缺少 $(entry_for "$1")，原生壳尚未实现"
-            fi
           }
 
           case "$PLATFORM" in
@@ -127,19 +115,18 @@ jobs:
           blocked=0
           for p in $REQ; do
             entry="$(entry_for "$p")"
-            if [ "$kit_ok" = true ] && [ -f "$entry" ]; then
+            if [ -f "$entry" ]; then
               eval "want_${p}=true"
               echo "✓ ${p}：构建入口 ${entry}"
             elif [ "$PLATFORM" = all ]; then
-              echo "::warning::跳过 ${p}：$(why_not "$p")"
+              echo "::warning::跳过 ${p}：缺少 ${entry}，原生壳尚未实现"
             else
-              echo "::error::无法构建 ${p}：$(why_not "$p")。改用 platform=web，或先落地壳与核心。"
+              echo "::error::无法构建 ${p}：缺少 ${entry}。改用 platform=web，或先落地壳。"
               blocked=1
             fi
           done
 
           {
-            echo "kit_version=$KIT_VERSION"
             echo "want_android=$want_android"
             echo "want_apple=$want_apple"
             echo "want_windows=$want_windows"
@@ -169,7 +156,7 @@ jobs:
         run: |
           cd dist && zip -qr "../clever-vpn-app-web-${RELEASE_TAG}.zip" . && cd ..
           ls -l "clever-vpn-app-web-${RELEASE_TAG}.zip"
-      # 给原生壳用：解压到 dist/ 就是 web/ + manifest.json
+      # 给原生壳用：解压到 dist/ 就是 web/ + manifest.json + icon.png
       - uses: actions/upload-artifact@v4
         with:
           name: web-dist
@@ -188,27 +175,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
       - uses: actions/download-artifact@v4
         with:
           name: web-dist
           path: dist
-      - name: 拉取闭源核心（android）
-        env:
-          PLATFORM: android
-        run: bash kit/fetch-kit.sh "${{ needs.plan.outputs.kit_version }}"
       - name: 出包（apk / aab）
         env:
           RELEASE_TAG: ${{ needs.plan.outputs.tag }}
-          KIT_VERSION: ${{ needs.plan.outputs.kit_version }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: bash shell-android/ci/build.sh
+        run: bash shells/android/ci/build.sh
       - uses: actions/upload-artifact@v4
         with:
           name: android-pkg
-          path: shell-android/ci/out/
+          path: shells/android/ci/out/
           if-no-files-found: error
           retention-days: 7
 
@@ -222,24 +207,21 @@ jobs:
         with:
           name: web-dist
           path: dist
-      - name: 拉取闭源核心（apple）
-        env:
-          PLATFORM: apple
-        run: bash kit/fetch-kit.sh "${{ needs.plan.outputs.kit_version }}"
       - name: 出包（dmg / pkg）
         env:
           RELEASE_TAG: ${{ needs.plan.outputs.tag }}
-          KIT_VERSION: ${{ needs.plan.outputs.kit_version }}
           APPLE_CERT_P12_BASE64: ${{ secrets.APPLE_CERT_P12_BASE64 }}
           APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
-        run: bash shell-macos/ci/build.sh
+          APPLE_PROFILE_APP_BASE64: ${{ secrets.APPLE_PROFILE_APP_BASE64 }}
+          APPLE_PROFILE_SYSEXT_BASE64: ${{ secrets.APPLE_PROFILE_SYSEXT_BASE64 }}
+        run: bash shells/macos/ci/build.sh
       - uses: actions/upload-artifact@v4
         with:
           name: apple-pkg
-          path: shell-macos/ci/out/
+          path: shells/macos/ci/out/
           if-no-files-found: error
           retention-days: 7
 
@@ -253,23 +235,17 @@ jobs:
         with:
           name: web-dist
           path: dist
-      - name: 拉取闭源核心（windows）
-        shell: bash
-        env:
-          PLATFORM: windows
-        run: bash kit/fetch-kit.sh "${{ needs.plan.outputs.kit_version }}"
-      - name: 出包（msix / exe）
+      - name: 出包（msi）
         shell: pwsh
         env:
           RELEASE_TAG: ${{ needs.plan.outputs.tag }}
-          KIT_VERSION: ${{ needs.plan.outputs.kit_version }}
           WINDOWS_PFX_BASE64: ${{ secrets.WINDOWS_PFX_BASE64 }}
           WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
-        run: pwsh -NoProfile -File shell-windows/ci/build.ps1
+        run: pwsh -NoProfile -File shells/windows/ci/build.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: windows-pkg
-          path: shell-windows/ci/out/
+          path: shells/windows/ci/out/
           if-no-files-found: error
           retention-days: 7
 

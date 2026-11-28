@@ -11,7 +11,7 @@
 └───────────────┬──────────────────────────────────┘
                 │  bridge@3（14 方法 + 1 事件，见 BRIDGE.md）
 ┌───────────────┴──────────────────────────────────┐
-│  shell-*（开源，薄）                              │
+│  shells/（开源，薄）                              │
 │  Windows WinUI3+WebView2 / macOS SwiftUI+WKWebView │
 │  Android Kotlin+WebView+VpnService                │
 │  职责：窗口、托盘、自启、WebView 承载、bridge 注入  │
