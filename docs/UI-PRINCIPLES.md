@@ -23,7 +23,7 @@ Status: 生效（评审时按「必须」逐条卡；「推荐」仅供样板参
 |---|---|---|
 | M1 | 品牌值（名字/副标题/主色/链接/标记）从 `window.BRAND` 取，不写死在页面里 | `app.json.color` 同时决定图标、托盘、商店素材；写死了就是"图标紫色、界面蓝色" |
 | M2 | 不引用任何外部资源（CDN / 字体 / 远程图片 / 第三方脚本） | 离线崩；三端 WebView 还可能白屏 |
-| M3 | 只通过 `bridge@2` 与壳交互：`capabilities activate deactivate lines setLine connect disconnect state settings setProtocol setSplit open on` | 碰 kit 内部接口，换壳即废 |
+| M3 | 只通过 `bridge@3` 与壳交互：`capabilities activate deactivate lines setLine connect disconnect state settings setProtocol setSplit open crmRequest on` | 碰 kit 内部接口，换壳即废 |
 | M4 | 守住 `web/` 限制：单文件 1 MB / 总量 8 MB / 200 文件 / 深度 3 | CI 直接红，出不了包 |
 | M5 | 任何页面都要有回退路径 | 用户卡死，只能杀进程 |
 | M6 | 触控热区 ≥ 44×44（开关这类小控件让整行可点） | 不是审美，是手指尺寸 |
@@ -115,7 +115,7 @@ Status: 生效（评审时按「必须」逐条卡；「推荐」仅供样板参
 
 ## 5. 模板化承诺
 
-**凡进入官方模板的东西，必须只依赖 `window.BRAND` + `bridge@2` + `clients` 契约的端点。**
+**凡进入官方模板的东西，必须只依赖 `window.BRAND` + `bridge@3` + `clients` 契约的端点。**
 不满足的不合入。
 
 理由：官方模板必须是"任何人 fork 后只改 `app.json` 就能上线"的状态，否则

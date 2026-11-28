@@ -282,6 +282,7 @@ writeFileSync(join(dist, 'manifest.json'), JSON.stringify({
   name: brand.name,
   version,
   kit_version: kitVersion,
+  crm: brand.crm,
   bundle_id: lock.bundle_id,
   lock_version: lock.lock_version,
   template: { package: tpl.package, studio_contract: tpl.studio_contract, bridge: tpl.bridge },

@@ -170,12 +170,20 @@ test('无壳时 bridge.js 的 mock 与真壳同形（本地开发/Studio 预览�
   await mockCrm(page, createScenario({ session: 'active' }));
   await useBrand(page, BRAND);
   await page.goto('/index.html');
+  expect(await page.evaluate(() => typeof window.bridge.crmRequest)).toBe('undefined');
   await expect(page.locator('#subbar')).toContainText('已订阅');
   await expect(page.locator('#recent .row').first()).toBeVisible();
   await page.click('#pwr');
   await expect(page.locator('#label')).toHaveText('已连接', { timeout: 5000 });
   await page.click('#pwr');
   await expect(page.locator('#label')).toHaveText('未连接');
+});
+
+test('CRM 传输：有壳时走 bridge.crmRequest', async ({ page }) => {
+  await openPage(page, '/index.html', { scenario: createScenario({ session: 'active' }) });
+  await expect(page.locator('#subbar')).toContainText('已订阅');
+  const methods = await page.evaluate(() => window.__callsByMethod());
+  expect(methods).toContain('crmRequest');
 });
 
 // ── 线路 ────────────────────────────────────────────────────

@@ -1,15 +1,18 @@
-# Bridge 契约 `bridge@2`
+# Bridge 契约 `bridge@3`
 
 壳（原生）与 UI（`web/`）之间**唯一**的接口。UI 不直接接触核心库，核心也不认识 UI。
 
-> 版本：`2`。**首版壳尚未发布 ⇒ 不保留 @1 兼容**。一旦有壳发布，破坏性变更按
+> 版本：`3`。**首版壳尚未发布 ⇒ 不保留 @1/@2 兼容**。一旦有壳发布，破坏性变更按
 > “旧版至少保留一个 App 发布周期”处理。
+>
+> @3 在 @2 上新增 `crmRequest`：CRM 请求改由 shell → kit → libbox 完成（libbox 复用
+> cf-api 的“优选 IP → A 记录 → 域名”拨号），WebView 不再直连 CRM。
 >
 > @1 的 `connect(configJson)` 已作废：它让页面自己攒节点，与
 > `clever-vpn-docs` 的 `clients` 契约 §8「CRM 不得下发 server/line/wg」矛盾。
 > @2 里线路是**壳的一等概念**，页面只说“选哪条线路”，不碰节点。
 
-## 1. 方法与类型（13 个，全部返回 Promise）
+## 1. 方法与类型（14 个，全部返回 Promise）
 
 ```ts
 interface Line {
@@ -46,8 +49,23 @@ interface State {
   activated: boolean;            // 激活码是否已经交给壳（不等于“已订阅”）
 }
 
+type CrmMethod = 'GET' | 'POST';
+
+interface CrmRequest {
+  method: CrmMethod;
+  path: string;                       // /plans、/orders?limit=20；壳自己拼 /api/app/v1
+  headers?: { [k: string]: string };  // 只允许 authorization / accept / content-type
+  body?: string;                      // JSON 文本
+  timeoutMs?: number;                 // 13000..30000（必须覆盖 libbox 的拨号预算）
+}
+
+interface CrmResponse {
+  status: number;                     // HTTP 状态原样（4xx/5xx 也是结果，不是传输错误）
+  body: string;                       // 原始响应体
+}
+
 interface Bridge {
-  capabilities(): Promise<{ bridge: '2'; platform: 'windows' | 'macos' | 'android' | 'ios'; store: 'apple' | 'google' | null }>;
+  capabilities(): Promise<{ bridge: '3'; platform: 'windows' | 'macos' | 'android' | 'ios'; store: 'apple' | 'google' | null }>;
   activate(key: string): Promise<void>;   // key = GET /subscription 的 code；**不得展示 / 记录 / 进 URL**
   deactivate(): Promise<void>;
   lines(opts?: { refresh?: boolean }): Promise<{ lines: Line[] }>;
@@ -59,6 +77,7 @@ interface Bridge {
   setProtocol(p: Protocol): Promise<void>;
   setSplit(s: Split): Promise<void>;
   open?(url: string): Promise<void>;      // 可选能力；只收 https，交给系统浏览器
+  crmRequest(req: CrmRequest): Promise<CrmResponse>; // CRM 的唯一网络出口（见下）
   on(evt: 'state', cb: (s: State) => void): void;
 }
 ```
@@ -69,6 +88,11 @@ interface Bridge {
 - `open` 是**可选能力**：页面必须写成
   `bridge.open ? bridge.open(url) : window.open(url, '_blank', 'noopener')`。
 - 页面每个文件加载后必须调一次 `state()`：事件不会重放（§2）。
+- `crmRequest` 是 **CRM 唯一的网络出口**：有它就不要再 `fetch(BRAND.crm.base)`。
+  参数里**没有 base/host**：壳用自己构建产物里的 `crm.base`（`dist/manifest.json`），
+  libbox 再校验一遍（https、path、方法、头、体、超时）。没有 `crmRequest`
+  （浏览器 / Studio 预览 / Site / 旧壳）时才回退 `fetch`——`web/api.js` 做特性检测。
+- **不再是“登录/注册/计费不走 bridge”**：这三类都是 CRM 请求，默认走 `crmRequest`。
 
 ## 2. 事件（1 个）
 
@@ -117,11 +141,11 @@ bridge.on('state', (snapshot) => { /* 与 state() 结构一致 */ });
 - `id` 必须回显（WebView 的消息无序且异步）。
 - 只传 JSON 可序列化数据；不要传函数、二进制。
 - `args` 是**单值**还是对象由方法签名定：`setLine` 传 `{id}`，`activate` 传 `{key}`，
-  `open` 传 `{url}`，无参数方法传 `null`。
+  `open` 传 `{url}`，`crmRequest` 传 `{method,path,headers,body,timeoutMs}`，无参数方法传 `null`。
 
 ### 到 kit 的映射（壳内部，不进契约）
 
-| bridge@2 | kit |
+| bridge@3 | kit |
 |---|---|
 | `capabilities` | 平台常量 + 安装来源（StoreKit / Play Billing / 直装） |
 | `activate` / `deactivate` | `VpnClient.activate` / `deactivate` |
@@ -131,16 +155,17 @@ bridge.on('state', (snapshot) => { /* 与 state() 结构一致 */ });
 | `state` | 本地状态机 + `ConnInfo` |
 | `setProtocol` | `updateProtocolType` |
 | `setSplit` | `updateSplitInfo` |
+| `crmRequest` | `crmRequest(base, method, path, headers, body, timeoutMs)` |
 
 ## 5. 安全约束（壳侧强制）
 
 | 必须 | 说明 |
 |---|---|
-| **方法白名单** | 仅本文件 §1 的 13 个字符串；下划线开头的数据字段不是方法 |
+| **方法白名单** | 仅本文件 §1 的 14 个字符串；下划线开头的数据字段不是方法 |
 | **资源目录白名单** | 只允许加载内置资源目录 + `kit://line-icon/…` |
 | **内部导航锁** | 页面之间只允许相对路径；`window.open` / 外部跳转一律拦下 |
 | **外链只走系统浏览器** | 客服 / 官网 / 条款 / 收银台只能由 `open()` 打开（页面有降级分支） |
-| **禁止危险能力** | 不暴露 `readFile` / `exec` / 任意 URL 打开 / 任意网络请求代理 |
+| **禁止危险能力** | 不暴露 `readFile` / `exec` / 任意 URL 打开 / 任意网络请求代理。`crmRequest` 是**唯一例外**：只服务 CRM（base 归壳、path/方法/头/体/超时受限、不跟随重定向、TLS 校验），不是通用代理 |
 | **不得记录激活码** | UI 不打印、不落盘、不拼进 URL；壳也不写日志 |
 
 ## 6. 线路图标
@@ -156,6 +181,7 @@ bridge.on('state', (snapshot) => { /* 与 state() 结构一致 */ });
 
 - **浏览器里没有壳时**（本地开发、Studio 预览、Playwright 假壳缺席）自动启用；
 - 行为与真壳同形（含 `state()`、`on('state')`、连接耗时、线路列表、协议/分流落盘）；
-- 不是第二份真相：真壳注入的 `window.bridge` 存在时，mock 一个字段都不覆盖。
+- 不是第二份真相：真壳注入的 `window.bridge` 存在时，mock 一个字段都不覆盖；
+- mock **不实现** `crmRequest` ⇒ 浏览器/预览自动回退 `fetch`（与真壳同形的特性检测）。
 
 假壳（`test/fake-shell.mjs`）是测试用的第三个实现，只用于 CI 断言“UI 真的按契约走”。

@@ -1,5 +1,5 @@
 /**
- * 测试用的假壳：实现 bridge@2 的全部 13 个方法，并记录调用，供断言“UI 真的按契约走”。
+ * 测试用的假壳：实现 bridge@3 的全部 14 个方法，并记录调用，供断言“UI 真的按契约走”。
  *
  * 为什么是完备的：bridge@2 是 UI 与原生之间的唯一接口，假壳覆盖全部方法后，
  * 所有与壳有关的 UI 行为都能在 Chromium 里测出来。
@@ -44,7 +44,18 @@ export const FAKE_SHELL = `
     calls,
     capabilities() {
       calls.push({ method: 'capabilities' });
-      return Promise.resolve({ bridge: '2', platform: 'windows', store: null });
+      return Promise.resolve({ bridge: '3', platform: 'windows', store: null });
+    },
+    crmRequest(req) {
+      calls.push({ method: 'crmRequest', req });
+      // 测试假壳：把桥请求转成 fetch，让 Playwright 现有的 **/api/app/v1/** mock 继续生效。
+      return fetch(window.BRAND.crm.base + '/api/app/v1' + req.path, {
+        method: req.method,
+        headers: req.headers || {},
+        body: req.body,
+      }).then(function (res) {
+        return res.text().then(function (text) { return { status: res.status, body: text }; });
+      });
     },
     activate(key) {
       calls.push({ method: 'activate', key });
