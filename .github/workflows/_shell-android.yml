@@ -1,0 +1,72 @@
+# Android 壳：可被 release.yml 调用（workflow_call），也可单独 dispatch / 分支 push 验证。
+# 有 keystore secrets 时签名；没有就出未签名包（只用于构建/功能验收）。
+name: shell-android
+
+on:
+  # 临时分支验证用：验证完删除（稳定入口是 release.yml）
+  push:
+    branches: [feat/shell-android]
+  workflow_call:
+    inputs:
+      tag:
+        description: '发布 tag（含 v 前缀）'
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '本地调试用的版本标签（含 v 前缀）'
+        type: string
+        required: false
+        default: 'v0.0.0-dev'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: 生成 dist/（push / 手动 dispatch）
+        if: github.event_name != 'workflow_call'
+        env:
+          RELEASE_TAG: ${{ inputs.tag || 'v0.0.0-dev' }}
+        run: node scripts/build.mjs
+
+      - name: 取发布流程的 dist/
+        if: github.event_name == 'workflow_call'
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+
+      - name: 出包（单测 → apk/aab → 签名）
+        env:
+          RELEASE_TAG: ${{ inputs.tag || 'v0.0.0-dev' }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: bash shells/android/ci/build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-pkg
+          path: shells/android/ci/out/
+          if-no-files-found: error
+          retention-days: 7

@@ -172,30 +172,10 @@ jobs:
   android:
     needs: [plan, web]
     if: needs.plan.outputs.want_android == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-      - uses: actions/download-artifact@v4
-        with:
-          name: web-dist
-          path: dist
-      - name: 出包（apk / aab）
-        env:
-          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: bash shells/android/ci/build.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android-pkg
-          path: shells/android/ci/out/
-          if-no-files-found: error
-          retention-days: 7
+    uses: ./.github/workflows/_shell-android.yml
+    with:
+      tag: ${{ needs.plan.outputs.tag }}
+    secrets: inherit
 
   apple:
     needs: [plan, web]

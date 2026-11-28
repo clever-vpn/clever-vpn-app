@@ -17,10 +17,17 @@ app/web/_brand.js
 # 平台构建产物
 shells/windows/bin/
 shells/windows/obj/
+shells/windows/**/bin/
+shells/windows/**/obj/
+shells/macos/Core/.build/
+shells/macos/Core/.swiftpm/
 shells/macos/build/
 shells/macos/DerivedData/
 shells/android/build/
+shells/android/app/build/
 shells/android/.gradle/
+shells/android/app/src/main/res/mipmap-*/
+shells/android/local.properties
 shells/android/local.properties
 
 # 构建期产物（由 app/app.json 的 logo/icon 生成）
