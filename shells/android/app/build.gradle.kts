@@ -10,11 +10,11 @@ val appName: String = providers.gradleProperty("appName").getOrElse("Clever VPN"
 val appVersionName: String = providers.gradleProperty("appVersionName").getOrElse("0.0.0")
 val appVersionCode: Int = providers.gradleProperty("appVersionCode").getOrElse("1").toInt()
 
-val storeFile: String? = providers.gradleProperty("androidReleaseStoreFile").orNull
+val storePath: String? = providers.gradleProperty("androidReleaseStoreFile").orNull
 val storePassword: String? = providers.gradleProperty("androidReleaseStorePassword").orNull
 val keyAlias: String? = providers.gradleProperty("androidReleaseKeyAlias").orNull
 val keyPassword: String? = providers.gradleProperty("androidReleaseKeyPassword").orNull
-val hasSigning = listOf(storeFile, storePassword, keyAlias, keyPassword).all { !it.isNullOrBlank() }
+val hasSigning = listOf(storePath, storePassword, keyAlias, keyPassword).all { !it.isNullOrBlank() }
 
 android {
     namespace = "com.clevervpn.app"
@@ -32,7 +32,7 @@ android {
     signingConfigs {
         if (hasSigning) {
             create("release") {
-                storeFile = file(storeFile!!)
+                storeFile = file(storePath!!)
                 storePassword = storePassword
                 keyAlias = keyAlias
                 keyPassword = keyPassword
