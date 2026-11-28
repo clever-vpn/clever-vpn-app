@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022  # VS2022 的 AppxPackage MSBuild 任务；windows-latest 已切到 VS2026，WinUI 1.7 找不到 v17 任务
     steps:
       - uses: actions/checkout@v4
 
